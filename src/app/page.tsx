@@ -28,7 +28,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { addDoc, collection, serverTimestamp, query, orderBy, getDocs } from 'firebase/firestore';
-import { useFirestore } from '@/firebase/provider';
+import { useFirestore } from '@/firebase';
 
 const initialHtml = `<h1>Welcome to CodeDeploy!</h1>
 <p>Edit the code on the left to see it live here.</p>
@@ -169,14 +169,18 @@ export default function Home() {
         }
       };
 
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      if (isClient) {
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+      }
 
       return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
+        if (isClient) {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        }
       };
-  }, [isDragging]);
+  }, [isDragging, isClient]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -258,9 +262,11 @@ export default function Home() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                        navigator.clipboard.writeText(deploymentResult.url!);
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
+                        if(deploymentResult.url) {
+                            navigator.clipboard.writeText(deploymentResult.url);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                        }
                     }}
                     >
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
