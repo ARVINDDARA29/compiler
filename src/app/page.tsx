@@ -332,6 +332,7 @@ export default function Home() {
       </Dialog>
       <Dialog open={isFullScreenPreviewOpen} onOpenChange={setIsFullScreenPreviewOpen}>
         <DialogContent className="w-screen h-screen max-w-full max-h-full p-0 m-0">
+          <DialogTitle className="sr-only">Full Screen Preview</DialogTitle>
           <LivePreview srcDoc={srcDoc} />
         </DialogContent>
       </Dialog>
