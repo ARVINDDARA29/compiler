@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Share2, Globe, Users, Server, Clock } from 'lucide-react';
+import { Copy, Check, Share2, Globe, Users, Server } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -132,10 +132,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if(firestore) {
+    if(isClient && firestore) {
       fetchDeployedLinks();
     }
-  }, [firestore]);
+  }, [isClient, firestore]);
 
 
   const handleRunCode = () => {
@@ -153,6 +153,7 @@ export default function Home() {
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isClient || window.innerWidth < 768) return;
     e.preventDefault();
     setIsDragging(true);
   };
@@ -183,6 +184,14 @@ export default function Home() {
         }
       };
   }, [isDragging, isClient]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      handleRunCode();
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [htmlCode, cssCode, jsCode]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -220,7 +229,8 @@ export default function Home() {
                         url: deploymentResult.url,
                         createdAt: serverTimestamp()
                     });
-                    fetchDeployedLinks();
+                    // Refetch links to show the new one
+                    await fetchDeployedLinks();
                 } catch(error) {
                     console.error("Error sharing link:", error)
                     toast({
@@ -265,6 +275,7 @@ export default function Home() {
             });
         }
     } catch (error) {
+        console.error("Deployment failed:", error);
         toast({
             variant: "destructive",
             title: "Deployment Failed",
@@ -279,16 +290,14 @@ export default function Home() {
   };
   
   const getSidebarWidth = () => {
-    if (!isClient) return '50%';
-    if (window.innerWidth < 768) {
+    if (!isClient || window.innerWidth < 768) {
       return '100%';
     }
     return `${sidebarWidth}%`;
   };
 
   const getPreviewWidth = () => {
-      if (!isClient) return '50%';
-      if (window.innerWidth < 768) {
+      if (!isClient || window.innerWidth < 768) {
         return '100%';
       }
       return `${100 - sidebarWidth}%`;
@@ -296,109 +305,111 @@ export default function Home() {
 
   return (
     <>
-      <div className="flex h-screen w-screen flex-col bg-secondary overflow-y-auto">
-        <AppHeader 
-          isDeploying={isDeploying} 
-          onDeploy={() => setIsDeployDialogOpen(true)} 
-          onRun={handleRunCode}
-        />
-        <main className="flex-1 flex flex-col">
-            <div ref={containerRef} className="flex flex-1 flex-col md:flex-row min-h-0">
-              <div 
-                  className="flex flex-col w-full md:h-full overflow-hidden p-2 md:p-4"
-                  style={{ 
-                    width: getSidebarWidth(),
-                    minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
-                  }}
-              >
-                  <CodeEditor
-                      htmlCode={htmlCode}
-                      setHtmlCode={setHtmlCode}
-                      cssCode={cssCode}
-                      setCssCode={setCssCode}
-                      jsCode={jsCode}
-                      setJsCode={setJsCode}
-                  />
-              </div>
-              <div
-                  onMouseDown={handleMouseDown}
-                  className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors hidden md:block"
-              />
-              <div 
-                  className="flex flex-col w-full md:h-full p-2 md:p-4 md:pl-0"
-                  style={{ 
-                      width: getPreviewWidth(),
+      <div className="flex h-screen w-screen flex-col bg-background">
+        <div className="flex-1 flex flex-col min-h-0">
+          <AppHeader 
+            isDeploying={isDeploying} 
+            onDeploy={() => setIsDeployDialogOpen(true)} 
+            onRun={handleRunCode}
+          />
+          <main className="flex-1 flex flex-col overflow-y-auto">
+              <div ref={containerRef} className="flex flex-1 flex-col md:flex-row min-h-0 p-2 md:p-4 gap-4">
+                <div 
+                    className="flex flex-col w-full md:h-full overflow-hidden"
+                    style={{ 
+                      width: getSidebarWidth(),
                       minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
-                  }}
-              >
-                  <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
-                      <TabsList className="grid w-full grid-cols-1">
-                          <TabsTrigger value="preview">Preview</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="preview" className="flex-1 overflow-auto">
-                          <LivePreview srcDoc={srcDoc} />
-                      </TabsContent>
-                  </Tabs>
+                    }}
+                >
+                    <CodeEditor
+                        htmlCode={htmlCode}
+                        setHtmlCode={setHtmlCode}
+                        cssCode={cssCode}
+                        setCssCode={setCssCode}
+                        jsCode={jsCode}
+                        setJsCode={setJsCode}
+                    />
+                </div>
+                <div
+                    onMouseDown={handleMouseDown}
+                    className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors rounded-full hidden md:block"
+                />
+                <div 
+                    className="flex flex-col w-full md:h-full overflow-hidden"
+                    style={{ 
+                        width: getPreviewWidth(),
+                        minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
+                    }}
+                >
+                    <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+                        <TabsList className="grid w-full grid-cols-1">
+                            <TabsTrigger value="preview">Preview</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="preview" className="flex-1 overflow-auto bg-white">
+                            <LivePreview srcDoc={srcDoc} />
+                        </TabsContent>
+                    </Tabs>
+                </div>
               </div>
-            </div>
-            <section className="py-12 md:py-16 bg-background">
-                <div className="container mx-auto px-4">
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold tracking-tight">All Users App Links</h2>
-                        <p className="text-muted-foreground mt-2">Explore sites deployed by other users.</p>
-                    </div>
-                    {isLoadingLinks ? (
-                        <div className="flex justify-center"><Server className="h-8 w-8 animate-spin" /></div>
-                    ) : deployedLinks.length > 0 ? (
-                        <>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                                {deployedLinks.slice(0, 5).map((link) => (
-                                    <Card key={link.id}>
-                                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                            <CardTitle className="text-sm font-medium truncate">{link.projectName}</CardTitle>
-                                            <Globe className="h-4 w-4 text-muted-foreground" />
-                                        </CardHeader>
-                                        <CardContent>
-                                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
-                                                {link.url}
-                                            </a>
-                                            <p className="text-xs text-muted-foreground mt-2">
-                                                {link.createdAt?.toDate() ? new Date(link.createdAt.toDate()).toLocaleString() : 'Just now'}
-                                            </p>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                            {deployedLinks.length > 5 && (
-                                <div className="mt-8 text-center">
-                                    <Button onClick={() => setIsAllLinksDialogOpen(true)}>Show All</Button>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                       <div className="text-center text-muted-foreground py-8">
-                            <Users className="mx-auto h-12 w-12" />
-                            <p className="mt-4">No public links yet. Be the first to share!</p>
-                        </div>
-                    )}
-                </div>
-            </section>
-        </main>
-        <footer className="w-full bg-card text-card-foreground border-t">
-            <div className="container mx-auto px-4 py-6 text-xs text-muted-foreground">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p>&copy; {new Date().getFullYear()} CodeDeploy. Made by Bishnoi engineers.</p>
-                    <div className="flex items-center gap-4">
-                        <a href="#" className="hover:text-foreground">Terms and Conditions</a>
-                        <a href="#" className="hover:text-foreground">Privacy Policy</a>
-                    </div>
-                </div>
-                 <div className="border-t my-4"></div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <p>Total Deployments: <span className="font-semibold text-foreground">{deployments.toLocaleString()}</span></p>
-                </div>
-            </div>
-        </footer>
+              <section className="py-12 md:py-16 bg-secondary/50">
+                  <div className="container mx-auto px-4">
+                      <div className="text-center mb-8">
+                          <h2 className="text-3xl font-bold tracking-tight">All Users App Links</h2>
+                          <p className="text-muted-foreground mt-2">Explore sites deployed by other users.</p>
+                      </div>
+                      {isLoadingLinks ? (
+                          <div className="flex justify-center"><Server className="h-8 w-8 animate-spin" /></div>
+                      ) : deployedLinks.length > 0 ? (
+                          <>
+                              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                                  {deployedLinks.slice(0, 5).map((link) => (
+                                      <Card key={link.id}>
+                                          <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                              <CardTitle className="text-sm font-medium truncate">{link.projectName}</CardTitle>
+                                              <Globe className="h-4 w-4 text-muted-foreground" />
+                                          </CardHeader>
+                                          <CardContent>
+                                              <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
+                                                  {link.url}
+                                              </a>
+                                              <p className="text-xs text-muted-foreground mt-2">
+                                                  {link.createdAt?.toDate() ? new Date(link.createdAt.toDate()).toLocaleString() : 'Just now'}
+                                              </p>
+                                          </CardContent>
+                                      </Card>
+                                  ))}
+                              </div>
+                              {deployedLinks.length > 5 && (
+                                  <div className="mt-8 text-center">
+                                      <Button onClick={() => setIsAllLinksDialogOpen(true)}>Show All</Button>
+                                  </div>
+                              )}
+                          </>
+                      ) : (
+                         <div className="text-center text-muted-foreground py-8">
+                              <Users className="mx-auto h-12 w-12" />
+                              <p className="mt-4">No public links yet. Be the first to share!</p>
+                          </div>
+                      )}
+                  </div>
+              </section>
+          </main>
+          <footer className="w-full bg-background text-card-foreground border-t">
+              <div className="container mx-auto px-4 py-6 text-xs text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <p>&copy; {new Date().getFullYear()} CodeDeploy. Made by Bishnoi engineers.</p>
+                      <div className="flex items-center gap-4">
+                          <a href="#" className="hover:text-foreground">Terms and Conditions</a>
+                          <a href="#" className="hover:text-foreground">Privacy Policy</a>
+                      </div>
+                  </div>
+                   <div className="border-t my-4"></div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <p>Total Deployments: <span className="font-semibold text-foreground">{deployments.toLocaleString()}</span></p>
+                  </div>
+              </div>
+          </footer>
+        </div>
       </div>
       <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
