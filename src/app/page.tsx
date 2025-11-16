@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Share2, Globe, Users, Server } from 'lucide-react';
+import { Copy, Check, Share2, Globe, Users, Server, Clock } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -82,8 +82,10 @@ export default function Home() {
   const [srcDoc, setSrcDoc] = useState('');
   
   const [isDeploying, setIsDeploying] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const [projectName, setProjectName] = useState('');
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
+  const [isAllLinksDialogOpen, setIsAllLinksDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
   const [shareLink, setShareLink] = useState(true);
@@ -92,11 +94,11 @@ export default function Home() {
   const [deployedLinks, setDeployedLinks] = useState<DeployedLink[]>([]);
   const [isLoadingLinks, setIsLoadingLinks] = useState(true);
 
-
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(50); // Initial width in percentage
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isClient, setIsClient] = useState(false);
 
@@ -146,8 +148,6 @@ export default function Home() {
       `);
   }
 
-  // Initial run is removed, run only on button click
-
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -156,30 +156,27 @@ export default function Home() {
   const handleMouseUp = () => {
     setIsDragging(false);
   };
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging && containerRef.current) {
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const newSidebarWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-        if (newSidebarWidth > 20 && newSidebarWidth < 80) { // Constraint resizing
-          setSidebarWidth(newSidebarWidth);
-        }
-      }
-    };
-    
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
   
+  useEffect(() => {
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isDragging || !containerRef.current) return;
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+        if (newWidth > 20 && newWidth < 80) {
+            setSidebarWidth(newWidth);
+        }
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+  }, [isDragging]);
 
   useEffect(() => {
-    // Increment deployments on an interval for visual effect
     const interval = setInterval(() => {
       setDeployments(prev => prev + Math.floor(Math.random() * 5) + 1);
     }, 3000);
@@ -200,15 +197,24 @@ export default function Home() {
     
     setIsDeploying(true);
     setIsDeployDialogOpen(false);
+    setCountdown(60);
 
     toast({
         title: "Deploying Project...",
         description: "Your site is being deployed. This may take a moment.",
     });
+    
+    countdownIntervalRef.current = setInterval(() => {
+        setCountdown(prev => {
+            if (prev <= 1) {
+                clearInterval(countdownIntervalRef.current!);
+                return 0;
+            }
+            return prev - 1;
+        });
+    }, 1000);
 
     const deployPromise = deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
-    
-    // Show deploying state for at least 60 seconds
     const delayPromise = new Promise(resolve => setTimeout(resolve, 60000));
 
     try {
@@ -274,6 +280,10 @@ export default function Home() {
         });
     } finally {
         setIsDeploying(false);
+        if (countdownIntervalRef.current) {
+           clearInterval(countdownIntervalRef.current);
+        }
+        setCountdown(0);
         setProjectName('');
         setAddWatermark(true);
         setShareLink(true);
@@ -281,21 +291,18 @@ export default function Home() {
   };
   
   const getSidebarWidth = () => {
-    if (!isClient) return '100%';
-    if (window.innerWidth < 768) {
+    if (!isClient || window.innerWidth < 768) {
       return '100%';
     }
-    return `calc(${sidebarWidth}%)`;
+    return `${sidebarWidth}%`;
   };
 
   const getPreviewWidth = () => {
-      if (!isClient) return '100%';
-      if (window.innerWidth < 768) {
+      if (!isClient || window.innerWidth < 768) {
         return '100%';
       }
-      return `calc(${100 - sidebarWidth}%)`;
+      return `${100 - sidebarWidth}%`;
   }
-
 
   return (
     <>
@@ -304,45 +311,46 @@ export default function Home() {
           isDeploying={isDeploying} 
           onDeploy={() => setIsDeployDialogOpen(true)} 
           onRun={handleRunCode}
+          countdown={countdown}
         />
         <main className="flex-1 flex flex-col">
-            <div ref={containerRef} className="flex flex-1 flex-col md:flex-row">
-            <div 
-                className="flex flex-col w-full overflow-hidden p-2 md:p-4"
-                style={{ 
-                width: getSidebarWidth(),
-                minHeight: '50vh',
-                }}
-            >
-                <CodeEditor
-                    htmlCode={htmlCode}
-                    setHtmlCode={setHtmlCode}
-                    cssCode={cssCode}
-                    setCssCode={setCssCode}
-                    jsCode={jsCode}
-                    setJsCode={setJsCode}
-                />
-            </div>
-            <div
-                onMouseDown={handleMouseDown}
-                className="w-full md:w-2 h-2 md:h-full cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors hidden md:block"
-            />
-            <div 
-                className="flex flex-col w-full p-2 md:p-4 md:pl-0"
-                style={{ 
-                    width: getPreviewWidth(),
-                    minHeight: '50vh',
-                }}
-            >
-                <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
-                    <TabsList className="grid w-full grid-cols-1">
-                        <TabsTrigger value="preview">Preview</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="preview" className="flex-1 overflow-auto">
-                        <LivePreview srcDoc={srcDoc} />
-                    </TabsContent>
-                </Tabs>
-            </div>
+            <div ref={containerRef} className="flex flex-1 flex-col md:flex-row min-h-0">
+              <div 
+                  className="flex flex-col w-full md:h-full overflow-hidden p-2 md:p-4"
+                  style={{ 
+                    width: getSidebarWidth(),
+                    height: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
+                  }}
+              >
+                  <CodeEditor
+                      htmlCode={htmlCode}
+                      setHtmlCode={setHtmlCode}
+                      cssCode={cssCode}
+                      setCssCode={setCssCode}
+                      jsCode={jsCode}
+                      setJsCode={setJsCode}
+                  />
+              </div>
+              <div
+                  onMouseDown={handleMouseDown}
+                  className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors hidden md:block"
+              />
+              <div 
+                  className="flex flex-col w-full md:h-full p-2 md:p-4 md:pl-0"
+                  style={{ 
+                      width: getPreviewWidth(),
+                      height: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
+                  }}
+              >
+                  <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+                      <TabsList className="grid w-full grid-cols-1">
+                          <TabsTrigger value="preview">Preview</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="preview" className="flex-1 overflow-auto">
+                          <LivePreview srcDoc={srcDoc} />
+                      </TabsContent>
+                  </Tabs>
+              </div>
             </div>
             <section className="py-12 md:py-16 bg-background">
                 <div className="container mx-auto px-4">
@@ -353,24 +361,31 @@ export default function Home() {
                     {isLoadingLinks ? (
                         <div className="flex justify-center"><Server className="h-8 w-8 animate-spin" /></div>
                     ) : deployedLinks.length > 0 ? (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {deployedLinks.map((link) => (
-                                <Card key={link.id}>
-                                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                        <CardTitle className="text-sm font-medium">{link.projectName}</CardTitle>
-                                        <Globe className="h-4 w-4 text-muted-foreground" />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
-                                            {link.url}
-                                        </a>
-                                        <p className="text-xs text-muted-foreground mt-2">
-                                            {new Date(link.createdAt?.toDate()).toLocaleString()}
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
+                        <>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                                {deployedLinks.slice(0, 5).map((link) => (
+                                    <Card key={link.id}>
+                                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                            <CardTitle className="text-sm font-medium truncate">{link.projectName}</CardTitle>
+                                            <Globe className="h-4 w-4 text-muted-foreground" />
+                                        </CardHeader>
+                                        <CardContent>
+                                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
+                                                {link.url}
+                                            </a>
+                                            <p className="text-xs text-muted-foreground mt-2">
+                                                {new Date(link.createdAt?.toDate()).toLocaleString()}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                            {deployedLinks.length > 5 && (
+                                <div className="mt-8 text-center">
+                                    <Button onClick={() => setIsAllLinksDialogOpen(true)}>Show All</Button>
+                                </div>
+                            )}
+                        </>
                     ) : (
                        <div className="text-center text-muted-foreground py-8">
                             <Users className="mx-auto h-12 w-12" />
@@ -453,6 +468,39 @@ export default function Home() {
             <Button type="button" onClick={handleDeploy} disabled={isDeploying || !projectName}>
               {isDeploying ? 'Deploying...' : 'Deploy to Internet'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isAllLinksDialogOpen} onOpenChange={setIsAllLinksDialogOpen}>
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>All Deployed Sites</DialogTitle>
+            <DialogDescription>
+              Explore all sites deployed by the community.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-1">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {deployedLinks.map((link) => (
+                <Card key={link.id}>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium truncate">{link.projectName}</CardTitle>
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
+                      {link.url}
+                    </a>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(link.createdAt?.toDate()).toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAllLinksDialogOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
