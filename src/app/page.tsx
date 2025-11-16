@@ -130,7 +130,9 @@ export default function Home() {
   
   useEffect(() => {
     setIsClient(true);
-    fetchDeployedLinks();
+    if(firestore) {
+      fetchDeployedLinks();
+    }
   }, [firestore]);
 
 
@@ -214,12 +216,23 @@ export default function Home() {
         });
     }, 1000);
 
-    const deployPromise = deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
-    const delayPromise = new Promise(resolve => setTimeout(resolve, 60000));
+    let result;
+    try {
+        result = await deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
+    } catch (error) {
+        console.error('Deployment failed:', error);
+        result = { success: false, error: error instanceof Error ? error.message : 'An unknown error occurred during deployment.' };
+    }
+
+    // Wait for the countdown to finish regardless of deployment result
+    await new Promise(resolve => setTimeout(resolve, countdown * 1000));
+
+    // Clear interval just in case it's still running
+    if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+    }
 
     try {
-        const [result] = await Promise.all([deployPromise, delayPromise]);
-
         if (result.success && result.url) {
             setDeployments(prev => prev + 1);
 
@@ -276,13 +289,10 @@ export default function Home() {
         toast({
             variant: "destructive",
             title: "Deployment Failed",
-            description: "An unexpected error occurred during deployment.",
+            description: "An unexpected error occurred while finalizing deployment.",
         });
     } finally {
         setIsDeploying(false);
-        if (countdownIntervalRef.current) {
-           clearInterval(countdownIntervalRef.current);
-        }
         setCountdown(0);
         setProjectName('');
         setAddWatermark(true);
@@ -319,7 +329,7 @@ export default function Home() {
                   className="flex flex-col w-full md:h-full overflow-hidden p-2 md:p-4"
                   style={{ 
                     width: getSidebarWidth(),
-                    height: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
+                    minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
                   }}
               >
                   <CodeEditor
@@ -339,7 +349,7 @@ export default function Home() {
                   className="flex flex-col w-full md:h-full p-2 md:p-4 md:pl-0"
                   style={{ 
                       width: getPreviewWidth(),
-                      height: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
+                      minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
                   }}
               >
                   <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
@@ -374,7 +384,7 @@ export default function Home() {
                                                 {link.url}
                                             </a>
                                             <p className="text-xs text-muted-foreground mt-2">
-                                                {new Date(link.createdAt?.toDate()).toLocaleString()}
+                                                {link.createdAt?.toDate() ? new Date(link.createdAt.toDate()).toLocaleString() : 'Just now'}
                                             </p>
                                         </CardContent>
                                     </Card>
@@ -492,7 +502,7 @@ export default function Home() {
                       {link.url}
                     </a>
                     <p className="text-xs text-muted-foreground mt-2">
-                      {new Date(link.createdAt?.toDate()).toLocaleString()}
+                      {link.createdAt?.toDate() ? new Date(link.createdAt.toDate()).toLocaleString() : 'Just now'}
                     </p>
                   </CardContent>
                 </Card>
@@ -507,3 +517,5 @@ export default function Home() {
     </>
   );
 }
+
+    
