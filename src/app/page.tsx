@@ -127,20 +127,6 @@ export default function Home() {
     setIsClient(true);
   }, []);
 
-  const handleRunCode = () => {
-    setSrcDoc(`
-        <html>
-          <head>
-            <style>${cssCode}</style>
-          </head>
-          <body>
-            ${htmlCode}
-            <script>${jsCode}</script>
-          </body>
-        </html>
-      `);
-  }
-
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isClient || window.innerWidth < 768) return;
     e.preventDefault();
@@ -176,7 +162,17 @@ export default function Home() {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      handleRunCode();
+      setSrcDoc(`
+        <html>
+          <head>
+            <style>${cssCode}</style>
+          </head>
+          <body>
+            ${htmlCode}
+            <script>${jsCode}</script>
+          </body>
+        </html>
+      `);
     }, 500);
 
     return () => clearTimeout(timeout);
@@ -278,8 +274,7 @@ export default function Home() {
       <div className="flex w-screen flex-col bg-background">
         <AppHeader 
           isDeploying={isDeploying} 
-          onDeploy={() => setIsDeployDialogOpen(true)} 
-          onRun={handleRunCode}
+          onDeploy={() => setIsDeployDialogOpen(true)}
         />
         <div className="flex-1 flex-col">
           <main ref={containerRef} className="flex flex-col md:flex-row p-2 md:p-4 gap-4 h-[calc(100vh-80px)]">
@@ -388,7 +383,10 @@ export default function Home() {
       </Dialog>
       <Dialog open={isFullScreenPreviewOpen} onOpenChange={setIsFullScreenPreviewOpen}>
         <DialogContent className="w-screen h-screen max-w-full max-h-full p-0 m-0">
-          <DialogTitle className="sr-only">Full Screen Preview</DialogTitle>
+          <DialogHeader>
+             <DialogTitle className="sr-only">Full Screen Preview</DialogTitle>
+             <DialogDescription className="sr-only">A full screen preview of your code.</DialogDescription>
+          </DialogHeader>
           <LivePreview srcDoc={srcDoc} />
         </DialogContent>
       </Dialog>
