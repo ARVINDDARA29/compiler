@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 const initialHtml = `<h1>Welcome to CodeDeploy!</h1>
 <p>Edit the code on the left to see it live here.</p>
@@ -68,6 +69,7 @@ export default function Home() {
   const [projectName, setProjectName] = useState('');
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [addWatermark, setAddWatermark] = useState(true);
 
   const { toast } = useToast();
 
@@ -83,7 +85,12 @@ export default function Home() {
     
     setIsDeploying(true);
     setIsDeployDialogOpen(false);
-    const result = await deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName });
+
+    const deployPromise = deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
+    const delayPromise = new Promise(resolve => setTimeout(resolve, 60000));
+
+    const [result] = await Promise.all([deployPromise, delayPromise]);
+
     setIsDeploying(false);
 
     if (result.success && result.url) {
@@ -180,6 +187,21 @@ export default function Home() {
                 className="col-span-3"
                 placeholder="my-awesome-site"
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+               <Label htmlFor="watermark" className="text-right">
+                Watermark
+              </Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <Switch
+                  id="watermark"
+                  checked={addWatermark}
+                  onCheckedChange={setAddWatermark}
+                />
+                <Label htmlFor="watermark" className="text-sm font-normal text-muted-foreground">
+                  Add "Bishnoi deployer" watermark
+                </Label>
+              </div>
             </div>
           </div>
           <DialogFooter>

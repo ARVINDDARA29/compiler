@@ -12,6 +12,7 @@ const schema = z.object({
   css: z.string(),
   js: z.string(),
   projectName: z.string().min(1, 'Project name is required.'),
+  addWatermark: z.boolean(),
 });
 
 type DeployResult = {
@@ -20,7 +21,7 @@ type DeployResult = {
   url?: string;
 };
 
-export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string }): Promise<DeployResult> {
+export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string, addWatermark: boolean }): Promise<DeployResult> {
   const validation = schema.safeParse(data);
   if (!validation.success) {
     const formattedErrors = validation.error.format();
@@ -28,9 +29,38 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     return { success: false, error: errorMessage };
   }
 
-  const { html, css, js, projectName } = validation.data;
+  const { html, css, js, projectName, addWatermark } = validation.data;
   
   const FILE_PATH = `${projectName}/index.html`;
+
+  const watermarkHTML = addWatermark
+    ? `
+    <a href="https://deploysite.netlify.app" target="_blank" class="bishnoi-deployer-watermark">
+      Bishnoi deployer
+    </a>
+  `
+    : '';
+
+  const watermarkCSS = addWatermark
+    ? `
+    .bishnoi-deployer-watermark {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 5px 10px;
+      font-size: 12px;
+      border-radius: 5px;
+      text-decoration: none;
+      z-index: 1000;
+      transition: background-color 0.3s;
+    }
+    .bishnoi-deployer-watermark:hover {
+      background-color: rgba(0, 0, 0, 0.9);
+    }
+  `
+    : '';
 
   const fileContent = `
 <!DOCTYPE html>
@@ -41,10 +71,12 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
   <title>${projectName}</title>
   <style>
     ${css}
+    ${watermarkCSS}
   </style>
 </head>
 <body>
   ${html}
+  ${watermarkHTML}
   <script>
     ${js}
   </script>
