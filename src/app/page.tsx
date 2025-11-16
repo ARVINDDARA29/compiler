@@ -199,10 +199,10 @@ export default function Home() {
           onDeploy={() => setIsDeployDialogOpen(true)} 
           onRun={handleRunCode}
         />
-        <main ref={containerRef} className="grid flex-1 grid-cols-1 md:flex md:flex-row overflow-hidden">
+        <main ref={containerRef} className="flex-1 flex flex-col md:flex-row overflow-hidden">
           <div 
-            className="h-full overflow-y-auto md:w-1/2"
-            style={{ width: `calc(${sidebarWidth}% - 4px)` }}
+            className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto"
+            style={{ width: `calc(${sidebarWidth}%)` }}
           >
              <div className="p-2 md:p-4 h-full">
                 <CodeEditor
@@ -217,12 +217,11 @@ export default function Home() {
           </div>
           <div
             onMouseDown={handleMouseDown}
-            className="hidden md:block w-2 cursor-col-resize bg-border hover:bg-primary/20 transition-colors"
-            style={{ flexShrink: 0 }}
+            className="w-full md:w-2 h-2 md:h-full cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors"
           />
            <div 
-            className="h-full flex-col p-2 md:p-4 md:pl-0 md:w-1/2"
-            style={{ width: `calc(${100 - sidebarWidth}% - 4px)` }}
+            className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col p-2 md:p-4 md:pl-0"
+            style={{ width: `calc(${100 - sidebarWidth}%)` }}
           >
              <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
                 <TabsList className="grid w-full grid-cols-1">
