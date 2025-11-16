@@ -203,58 +203,65 @@ export default function Home() {
   const handleDeploy = async () => {
     if (!projectName) {
       toast({
-        variant: "destructive",
-        title: "Project Name Required",
-        description: "Please enter a name for your project.",
+        variant: 'destructive',
+        title: 'Project Name Required',
+        description: 'Please enter a name for your project.',
       });
       return;
     }
-
+  
     setIsDeploying(true);
     setIsDeployDialogOpen(false);
-
+  
     toast({
-      title: "Deploying Project...",
-      description: "Your site is being deployed. This may take a moment.",
+      title: 'Deploying Project...',
+      description: 'Your site is being deployed. This may take a moment.',
     });
-
+  
     try {
-      const deploymentResult = await deployToGithub({
+      // Start deployment and timer simultaneously
+      const deploymentPromise = deployToGithub({
         html: htmlCode,
         css: cssCode,
         js: jsCode,
         projectName,
         addWatermark,
       });
-
+  
+      const timerPromise = new Promise(resolve => setTimeout(resolve, 30000));
+  
+      // Wait for both to complete
+      const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
+  
       if (deploymentResult.success && deploymentResult.url) {
         if (shareLink && firestore) {
           try {
-            await addDoc(collection(firestore, "deployedSites"), {
+            await addDoc(collection(firestore, 'deployedSites'), {
               projectName: projectName,
               url: deploymentResult.url,
               createdAt: serverTimestamp(),
             });
             await fetchDeployedLinks();
           } catch (error) {
-            console.error("Error sharing link:", error);
-            // Don't block the main success toast if sharing fails
+            console.error('Error sharing link:', error);
             toast({
-              variant: "destructive",
-              title: "Sharing Failed",
-              description: "Your site was deployed, but could not be added to the public list.",
+              variant: 'destructive',
+              title: 'Sharing Failed',
+              description: 'Your site was deployed, but could not be added to the public list.',
             });
           }
         }
-        
+  
         toast({
-          title: "Deployment Successful!",
-          description: "Your link is permanent and free forever.",
+          title: 'Deployment Successful!',
+          description: 'Your link is permanent and free forever.',
           duration: 9000,
           action: (
             <div className="flex items-center gap-2">
               <a href={deploymentResult.url} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm">View Site</Button>
+                <Button variant="outline" size="sm">
+                  View Site
+                </Button>
               </a>
               <Button
                 variant="ghost"
@@ -274,17 +281,16 @@ export default function Home() {
           ),
         });
       } else {
-        throw new Error(deploymentResult.error || "An unknown error occurred during deployment.");
+        throw new Error(deploymentResult.error || 'An unknown error occurred during deployment.');
       }
     } catch (error) {
-      console.error("Deployment failed:", error);
+      console.error('Deployment failed:', error);
       toast({
-        variant: "destructive",
-        title: "Deployment Failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        variant: 'destructive',
+        title: 'Deployment Failed',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred.',
       });
     } finally {
-      // This will run regardless of success or failure
       setIsDeploying(false);
       setProjectName('');
       setAddWatermark(true);
