@@ -101,6 +101,7 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
 
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const fetchDeployedLinks = async () => {
     if (!firestore) return;
@@ -128,6 +129,9 @@ export default function Home() {
   
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
     if(firestore) {
       fetchDeployedLinks();
     }
@@ -187,8 +191,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  const { toast } = useToast();
-
   const handleDeploy = async () => {
     if (!projectName) {
         toast({
@@ -210,9 +212,7 @@ export default function Home() {
     try {
         const deploymentResult = await deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
 
-        if (deploymentResult && deploymentResult.success && deploymentResult.url) {
-            setDeployments(prev => prev + 1);
-
+        if (deploymentResult.success && deploymentResult.url) {
             if (shareLink && firestore) {
                 try {
                     await addDoc(collection(firestore, "deployedSites"), {
@@ -233,7 +233,7 @@ export default function Home() {
             
             toast({
                 title: "Deployment Successful!",
-                description: "Your site is live. The link is permanent and free forever.",
+                description: "Your link is permanent and free forever.",
                 duration: 9000,
                 action: (
                 <div className="flex items-center gap-2">
@@ -261,7 +261,7 @@ export default function Home() {
             toast({
                 variant: "destructive",
                 title: "Deployment Failed",
-                description: (deploymentResult && deploymentResult.error) || "An unknown error occurred.",
+                description: deploymentResult.error || "An unknown error occurred.",
             });
         }
     } catch (error) {
@@ -279,14 +279,16 @@ export default function Home() {
   };
   
   const getSidebarWidth = () => {
-    if (!isClient || window.innerWidth < 768) {
+    if (!isClient) return '50%';
+    if (window.innerWidth < 768) {
       return '100%';
     }
     return `${sidebarWidth}%`;
   };
 
   const getPreviewWidth = () => {
-      if (!isClient || window.innerWidth < 768) {
+      if (!isClient) return '50%';
+      if (window.innerWidth < 768) {
         return '100%';
       }
       return `${100 - sidebarWidth}%`;
@@ -494,5 +496,3 @@ export default function Home() {
     </>
   );
 }
-
-    
