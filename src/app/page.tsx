@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Smartphone, Monitor } from 'lucide-react';
+import { Copy, Check, Play } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -19,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const initialHtml = `<h1>Welcome to CodeDeploy!</h1>
 <p>Edit the code on the left to see it live here.</p>
@@ -61,6 +62,8 @@ export default function Home() {
   const [htmlCode, setHtmlCode] = useState(initialHtml);
   const [cssCode, setCssCode] = useState(initialCss);
   const [jsCode, setJsCode] = useState(initialJs);
+
+  const [srcDoc, setSrcDoc] = useState('');
   
   const [isDeploying, setIsDeploying] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -72,9 +75,27 @@ export default function Home() {
 
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(50); // Initial width in percentage
-  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleRunCode = () => {
+    setSrcDoc(`
+        <html>
+          <head>
+            <style>${cssCode}</style>
+          </head>
+          <body>
+            ${htmlCode}
+            <script>${jsCode}</script>
+          </body>
+        </html>
+      `);
+  }
+
+  // Initial run
+  useEffect(() => {
+    handleRunCode();
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -173,11 +194,15 @@ export default function Home() {
   return (
     <>
       <div className="flex h-screen w-screen flex-col bg-secondary">
-        <AppHeader isDeploying={isDeploying} onDeploy={() => setIsDeployDialogOpen(true)} />
+        <AppHeader 
+          isDeploying={isDeploying} 
+          onDeploy={() => setIsDeployDialogOpen(true)} 
+          onRun={handleRunCode}
+        />
         <main ref={containerRef} className="grid flex-1 grid-cols-1 md:flex md:flex-row overflow-hidden">
           <div 
-            className="h-full overflow-y-auto"
-            style={{ width: `${sidebarWidth}%` }}
+            className="h-full overflow-y-auto md:w-1/2"
+            style={{ width: `calc(${sidebarWidth}% - 4px)` }}
           >
              <div className="p-2 md:p-4 h-full">
                 <CodeEditor
@@ -195,19 +220,18 @@ export default function Home() {
             className="hidden md:block w-2 cursor-col-resize bg-border hover:bg-primary/20 transition-colors"
             style={{ flexShrink: 0 }}
           />
-          <div 
-            className="hidden md:flex h-full flex-col p-2 md:p-4 md:pl-0"
-            style={{ width: `calc(${100 - sidebarWidth}% - 8px)` }}
+           <div 
+            className="h-full flex-col p-2 md:p-4 md:pl-0 md:w-1/2"
+            style={{ width: `calc(${100 - sidebarWidth}% - 4px)` }}
           >
-            <div className="flex items-center justify-end gap-2 mb-2">
-                <Button variant={previewMode === 'mobile' ? 'secondary': 'ghost'} size="icon" onClick={() => setPreviewMode('mobile')}>
-                    <Smartphone className="h-5 w-5" />
-                </Button>
-                <Button variant={previewMode === 'desktop' ? 'secondary': 'ghost'} size="icon" onClick={() => setPreviewMode('desktop')}>
-                    <Monitor className="h-5 w-5" />
-                </Button>
-            </div>
-            <LivePreview htmlCode={htmlCode} cssCode={cssCode} jsCode={jsCode} previewMode={previewMode} />
+             <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+                <TabsList className="grid w-full grid-cols-1">
+                    <TabsTrigger value="preview">Preview</TabsTrigger>
+                </TabsList>
+                <TabsContent value="preview" className="flex-1 overflow-hidden">
+                    <LivePreview srcDoc={srcDoc} />
+                </TabsContent>
+            </Tabs>
           </div>
         </main>
         <footer className="px-4 py-3 border-t bg-card text-card-foreground">
@@ -215,7 +239,7 @@ export default function Home() {
                 <div className="flex items-center gap-4">
                     <p>&copy; {new Date().getFullYear()} CodeDeploy. Made by Bishnoi engineers.</p>
                     <div className="flex items-center gap-3">
-                        <a href="#" className="hover:text-foreground">Terms of Service</a>
+                        <a href="#" className="hover:text-foreground">Terms and Conditions</a>
                         <a href="#" className="hover:text-foreground">Privacy Policy</a>
                     </div>
                 </div>
