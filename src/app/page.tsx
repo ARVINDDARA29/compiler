@@ -95,7 +95,7 @@ export default function Home() {
   // Initial run
   useEffect(() => {
     handleRunCode();
-  }, []);
+  }, [htmlCode, cssCode, jsCode]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -193,15 +193,15 @@ export default function Home() {
 
   return (
     <>
-      <div className="flex min-h-screen w-screen flex-col bg-secondary">
+      <div className="flex h-screen w-screen flex-col bg-secondary overflow-auto">
         <AppHeader 
           isDeploying={isDeploying} 
           onDeploy={() => setIsDeployDialogOpen(true)} 
           onRun={handleRunCode}
         />
-        <main ref={containerRef} className="flex flex-1 flex-col md:flex-row md:h-[calc(100vh-11rem)]">
+        <div ref={containerRef} className="flex flex-1 flex-col md:flex-row">
           <div 
-            className="flex-1 flex flex-col min-h-[50vh] md:min-h-0 md:h-full overflow-hidden p-2 md:p-4"
+            className="flex flex-col min-h-[50vh] w-full md:min-h-0 overflow-hidden p-2 md:p-4"
             style={{ width: `calc(${sidebarWidth}%)` }}
           >
             <CodeEditor
@@ -215,10 +215,10 @@ export default function Home() {
           </div>
           <div
             onMouseDown={handleMouseDown}
-            className="w-full md:w-2 h-2 md:h-full cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors"
+            className="w-full md:w-2 h-2 md:h-full cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors hidden md:block"
           />
            <div 
-            className="flex-1 flex flex-col min-h-[50vh] md:min-h-0 p-2 md:p-4 md:pl-0"
+            className="flex flex-col min-h-[50vh] w-full md:min-h-0 p-2 md:p-4 md:pl-0"
             style={{ width: `calc(${100 - sidebarWidth}%)` }}
           >
              <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
@@ -230,8 +230,8 @@ export default function Home() {
                 </TabsContent>
             </Tabs>
           </div>
-        </main>
-        <footer className="w-full bg-card text-card-foreground border-t">
+        </div>
+        <footer className="w-full bg-card text-card-foreground border-t mt-auto">
             <div className="container mx-auto px-4 py-6 text-xs text-muted-foreground">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p>&copy; {new Date().getFullYear()} CodeDeploy. Made by Bishnoi engineers.</p>
