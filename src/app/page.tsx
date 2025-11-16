@@ -182,7 +182,6 @@ export default function Home() {
   
       const timerPromise = new Promise(resolve => setTimeout(resolve, 30000));
   
-      // Wait for both the deployment to be sent and the timer to finish
       const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
   
       if (deploymentResult.success && deploymentResult.url) {
@@ -195,7 +194,6 @@ export default function Home() {
             });
           } catch (error) {
             console.error('Error sharing link:', error);
-            // Non-blocking error for the user
           }
         }
   
@@ -267,13 +265,12 @@ export default function Home() {
           onDeploy={() => setIsDeployDialogOpen(true)} 
           onRun={handleRunCode}
         />
-        <main className="flex-1 flex flex-col min-h-0">
-          <div ref={containerRef} className="flex flex-1 flex-col md:flex-row min-h-0 p-2 md:p-4 gap-4">
+        <main ref={containerRef} className="flex-1 flex flex-col md:flex-row min-h-0 p-2 md:p-4 gap-4">
             <div 
-                className="flex flex-col w-full md:h-full overflow-hidden"
+                className="flex flex-col md:h-full overflow-hidden"
                 style={{ 
                   width: getSidebarWidth(),
-                  minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
+                  height: isClient && window.innerWidth < 768 ? '50%' : '100%',
                 }}
             >
                 <CodeEditor
@@ -287,13 +284,13 @@ export default function Home() {
             </div>
             <div
                 onMouseDown={handleMouseDown}
-                className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors rounded-full md:block"
+                className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors rounded-full"
             />
             <div 
-                className="flex flex-col w-full md:h-full overflow-hidden"
+                className="flex flex-col md:h-full overflow-hidden"
                 style={{ 
                     width: getPreviewWidth(),
-                    minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
+                    height: isClient && window.innerWidth < 768 ? '50%' : '100%',
                 }}
             >
                 <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
@@ -305,7 +302,6 @@ export default function Home() {
                     </TabsContent>
                 </Tabs>
             </div>
-          </div>
         </main>
         <footer className="w-full bg-background text-card-foreground border-t">
             <div className="container mx-auto px-4 py-6 text-xs text-muted-foreground">
@@ -384,3 +380,4 @@ export default function Home() {
       </Dialog>
     </>
   );
+}
