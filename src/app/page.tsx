@@ -21,40 +21,80 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const initialHtml = `<h1>Welcome to CodeDeploy!</h1>
-<p>Edit the code on the left to see it live here.</p>
-<button id="myButton">Click me</button>
+const initialHtml = `<header class="hero">
+  <h1>My Awesome Product</h1>
+  <p>A solution for all your needs. Innovative, fast, and reliable.</p>
+  <a href="#about" class="cta-button">Learn More</a>
+</header>
+<section id="about" class="about-us">
+  <h2>About Us</h2>
+  <p>We are a team of passionate developers dedicated to creating the best products. Our mission is to solve real-world problems with elegant and efficient solutions.</p>
+</section>
 `;
 
 const initialCss = `body {
   font-family: sans-serif;
-  padding: 2rem;
+  margin: 0;
+  padding: 0;
   background-color: #f9f9f9;
   color: #333;
+  line-height: 1.6;
 }
 
-h1 {
-  color: #2E3192;
+.hero {
+  background-color: #2E3192;
+  color: white;
+  padding: 4rem 2rem;
+  text-align: center;
 }
 
-button {
+.hero h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.cta-button {
   background-color: #6639A6;
   color: white;
   border: none;
   padding: 10px 20px;
   border-radius: 5px;
   cursor: pointer;
+  text-decoration: none;
+  font-size: 1rem;
   transition: background-color 0.3s;
 }
 
-button:hover {
+.cta-button:hover {
   background-color: #522d83;
+}
+
+.about-us {
+  padding: 4rem 2rem;
+  text-align: center;
+  background-color: #fff;
+}
+
+.about-us h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #2E3192;
 }
 `;
 
-const initialJs = `const button = document.getElementById('myButton');
-button.addEventListener('click', () => {
-  alert('Hello from your deployed site!');
+const initialJs = `document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+
+    document.querySelector(this.getAttribute('href')).scrollIntoView({
+      behavior: 'smooth'
+    });
+  });
 });
 `;
 
@@ -235,56 +275,72 @@ export default function Home() {
 
   return (
     <>
-      <div className="flex h-screen w-screen flex-col bg-background">
+      <div className="flex w-screen flex-col bg-background">
         <AppHeader 
           isDeploying={isDeploying} 
           onDeploy={() => setIsDeployDialogOpen(true)} 
           onRun={handleRunCode}
         />
-        <main ref={containerRef} className="flex-1 flex flex-col md:flex-row min-h-0 p-2 md:p-4 gap-4">
-            <div 
-                className="flex flex-col md:h-full overflow-hidden"
-                style={{ 
-                  width: getSidebarWidth(),
-                  height: isClient && window.innerWidth < 768 ? '50%' : '100%',
-                }}
-            >
-                <CodeEditor
-                    htmlCode={htmlCode}
-                    setHtmlCode={setHtmlCode}
-                    cssCode={cssCode}
-                    setCssCode={setCssCode}
-                    jsCode={jsCode}
-                    setJsCode={setJsCode}
-                />
-            </div>
-            <div
-                onMouseDown={handleMouseDown}
-                className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors rounded-full"
-            />
-            <div 
-                className="flex flex-col md:h-full overflow-hidden"
-                style={{ 
-                    width: getPreviewWidth(),
+        <div className="flex-1 flex-col">
+          <main ref={containerRef} className="flex flex-col md:flex-row p-2 md:p-4 gap-4 h-[calc(100vh-80px)]">
+              <div 
+                  className="flex flex-col md:h-full overflow-hidden"
+                  style={{ 
+                    width: getSidebarWidth(),
                     height: isClient && window.innerWidth < 768 ? '50%' : '100%',
-                }}
-            >
-                <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
-                    <div className="flex items-center justify-between pr-2 bg-muted rounded-t-md">
-                        <TabsList className="grid w-full grid-cols-1 bg-muted">
-                            <TabsTrigger value="preview">Preview</TabsTrigger>
-                        </TabsList>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullScreenPreviewOpen(true)}>
-                            <Expand className="h-4 w-4" />
-                            <span className="sr-only">Fullscreen Preview</span>
-                        </Button>
-                    </div>
-                    <TabsContent value="preview" className="flex-1 overflow-auto bg-white mt-0">
-                        <LivePreview srcDoc={srcDoc} />
-                    </TabsContent>
-                </Tabs>
+                  }}
+              >
+                  <CodeEditor
+                      htmlCode={htmlCode}
+                      setHtmlCode={setHtmlCode}
+                      cssCode={cssCode}
+                      setCssCode={setCssCode}
+                      jsCode={jsCode}
+                      setJsCode={setJsCode}
+                  />
+              </div>
+              <div
+                  onMouseDown={handleMouseDown}
+                  className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors rounded-full"
+              />
+              <div 
+                  className="flex flex-col md:h-full overflow-hidden"
+                  style={{ 
+                      width: getPreviewWidth(),
+                      height: isClient && window.innerWidth < 768 ? '50%' : '100%',
+                  }}
+              >
+                  <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+                      <div className="flex items-center justify-between pr-2 bg-muted rounded-t-md">
+                          <TabsList className="grid w-full grid-cols-1 bg-muted">
+                              <TabsTrigger value="preview">Preview</TabsTrigger>
+                          </TabsList>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullScreenPreviewOpen(true)}>
+                              <Expand className="h-4 w-4" />
+                              <span className="sr-only">Fullscreen Preview</span>
+                          </Button>
+                      </div>
+                      <TabsContent value="preview" className="flex-1 overflow-auto bg-white mt-0">
+                          <LivePreview srcDoc={srcDoc} />
+                      </TabsContent>
+                  </Tabs>
+              </div>
+          </main>
+          <footer className="w-full bg-card border-t mt-4 p-8">
+            <div className="container mx-auto text-center">
+              <h2 className="text-2xl font-bold text-primary mb-4">About CodeDeploy</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                CodeDeploy is a simple yet powerful online editor for HTML, CSS, and JavaScript. 
+                It provides a live preview of your code and allows for one-click deployment to GitHub Pages, 
+                making it incredibly easy to share your web creations with the world. 
+                This tool was built to empower developers and designers to quickly prototype and deploy static websites for free.
+              </p>
+              <p className="text-sm text-muted-foreground mt-8">
+                &copy; {new Date().getFullYear()} CodeDeploy. All rights reserved.
+              </p>
             </div>
-        </main>
+          </footer>
+        </div>
       </div>
       <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
