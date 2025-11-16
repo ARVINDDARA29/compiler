@@ -216,26 +216,28 @@ export default function Home() {
         });
     }, 1000);
 
+    const deploymentPromise = deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
+    const timerPromise = new Promise(resolve => setTimeout(resolve, 60000));
+
     let result;
     try {
-        result = await deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
+        // Wait for both the deployment and the timer to finish
+        [result] = await Promise.all([deploymentPromise, timerPromise]);
     } catch (error) {
         console.error('Deployment failed:', error);
         result = { success: false, error: error instanceof Error ? error.message : 'An unknown error occurred during deployment.' };
+        // Ensure the timer is cleared if an error occurs
+        if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+        }
     }
 
-    // Wait for the countdown to finish regardless of deployment result
-    await new Promise(resolve => setTimeout(resolve, countdown * 1000));
-
-    // Clear interval just in case it's still running
-    if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current);
-    }
 
     try {
         if (result.success && result.url) {
             setDeployments(prev => prev + 1);
 
+            // Now, after the wait, add to firestore if requested
             if (shareLink && firestore) {
                 try {
                     await addDoc(collection(firestore, "deployedSites"), {
@@ -243,7 +245,7 @@ export default function Home() {
                         url: result.url,
                         createdAt: serverTimestamp()
                     });
-                    fetchDeployedLinks(); // Refresh links
+                    fetchDeployedLinks(); // Refresh links after sharing
                 } catch(error) {
                     console.error("Error sharing link:", error)
                     toast({
@@ -253,7 +255,8 @@ export default function Home() {
                     });
                 }
             }
-
+            
+            // And show the success toast
             toast({
                 title: "Deployment Successful!",
                 description: "Your site is live. The link is permanent and free forever.",
@@ -517,5 +520,3 @@ export default function Home() {
     </>
   );
 }
-
-    
