@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Copy, Check, Smartphone, Monitor } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
 import { deployToGithub } from '@/app/actions/deploy';
-import { getSuggestions } from '@/app/actions/suggest';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -64,12 +63,55 @@ export default function Home() {
   const [jsCode, setJsCode] = useState(initialJs);
   
   const [isDeploying, setIsDeploying] = useState(false);
-  const [isSuggesting, setIsSuggesting] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [projectName, setProjectName] = useState('');
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
+
+  const [deployments, setDeployments] = useState(50000);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(50); // Initial width in percentage
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const newSidebarWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      if (newSidebarWidth > 20 && newSidebarWidth < 80) { // Constraint resizing
+        setSidebarWidth(newSidebarWidth);
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+  
+
+  useEffect(() => {
+    // Increment deployments on an interval for visual effect
+    const interval = setInterval(() => {
+      setDeployments(prev => prev + Math.floor(Math.random() * 5) + 1);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { toast } = useToast();
 
@@ -94,6 +136,7 @@ export default function Home() {
     setIsDeploying(false);
 
     if (result.success && result.url) {
+      setDeployments(prev => prev + 1);
       toast({
         title: "Deployment Successful!",
         description: "Your code has been pushed to GitHub.",
@@ -127,45 +170,58 @@ export default function Home() {
     setProjectName('');
   };
 
-  const handleSuggest = async () => {
-    setIsSuggesting(true);
-    const combinedCode = `
-      <!-- HTML -->
-      ${htmlCode}
-      
-      /* CSS */
-      ${cssCode}
-
-      // JavaScript
-      ${jsCode}
-    `;
-    const result = await getSuggestions(combinedCode);
-    setSuggestions(result);
-    setIsSuggesting(false);
-  };
-
   return (
     <>
       <div className="flex h-screen w-screen flex-col bg-secondary">
         <AppHeader isDeploying={isDeploying} onDeploy={() => setIsDeployDialogOpen(true)} />
-        <main className="grid flex-1 grid-cols-1 md:grid-cols-2 overflow-hidden">
-          <div className="h-full p-2 md:p-4 overflow-y-auto">
-            <CodeEditor
-              htmlCode={htmlCode}
-              setHtmlCode={setHtmlCode}
-              cssCode={cssCode}
-              setCssCode={setCssCode}
-              jsCode={jsCode}
-              setJsCode={setJsCode}
-              suggestions={suggestions}
-              isSuggesting={isSuggesting}
-              onSuggest={handleSuggest}
-            />
+        <main ref={containerRef} className="grid flex-1 grid-cols-1 md:flex md:flex-row overflow-hidden">
+          <div 
+            className="h-full overflow-y-auto"
+            style={{ width: `${sidebarWidth}%` }}
+          >
+             <div className="p-2 md:p-4 h-full">
+                <CodeEditor
+                    htmlCode={htmlCode}
+                    setHtmlCode={setHtmlCode}
+                    cssCode={cssCode}
+                    setCssCode={setCssCode}
+                    jsCode={jsCode}
+                    setJsCode={setJsCode}
+                />
+             </div>
           </div>
-          <div className="hidden md:flex h-full flex-col p-2 md:p-4 md:pl-0">
-            <LivePreview htmlCode={htmlCode} cssCode={cssCode} jsCode={jsCode} />
+          <div
+            onMouseDown={handleMouseDown}
+            className="hidden md:block w-2 cursor-col-resize bg-border hover:bg-primary/20 transition-colors"
+            style={{ flexShrink: 0 }}
+          />
+          <div 
+            className="hidden md:flex h-full flex-col p-2 md:p-4 md:pl-0"
+            style={{ width: `calc(${100 - sidebarWidth}% - 8px)` }}
+          >
+            <div className="flex items-center justify-end gap-2 mb-2">
+                <Button variant={previewMode === 'mobile' ? 'secondary': 'ghost'} size="icon" onClick={() => setPreviewMode('mobile')}>
+                    <Smartphone className="h-5 w-5" />
+                </Button>
+                <Button variant={previewMode === 'desktop' ? 'secondary': 'ghost'} size="icon" onClick={() => setPreviewMode('desktop')}>
+                    <Monitor className="h-5 w-5" />
+                </Button>
+            </div>
+            <LivePreview htmlCode={htmlCode} cssCode={cssCode} jsCode={jsCode} previewMode={previewMode} />
           </div>
         </main>
+        <footer className="px-4 py-3 border-t bg-card text-card-foreground">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-4">
+                    <p>&copy; {new Date().getFullYear()} CodeDeploy. Made by Bishnoi engineers.</p>
+                    <div className="flex items-center gap-3">
+                        <a href="#" className="hover:text-foreground">Terms of Service</a>
+                        <a href="#" className="hover:text-foreground">Privacy Policy</a>
+                    </div>
+                </div>
+                <p>Deployments: <span className="font-semibold text-foreground">{deployments.toLocaleString()}</span></p>
+            </div>
+        </footer>
       </div>
       <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
