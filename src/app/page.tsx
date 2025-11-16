@@ -202,90 +202,92 @@ export default function Home() {
 
   const handleDeploy = async () => {
     if (!projectName) {
-        toast({
-            variant: "destructive",
-            title: "Project Name Required",
-            description: "Please enter a name for your project.",
-        });
-        return;
+      toast({
+        variant: "destructive",
+        title: "Project Name Required",
+        description: "Please enter a name for your project.",
+      });
+      return;
     }
-    
+
     setIsDeploying(true);
     setIsDeployDialogOpen(false);
 
     toast({
-        title: "Deploying Project...",
-        description: "Your site is being deployed. This may take a moment.",
+      title: "Deploying Project...",
+      description: "Your site is being deployed. This may take a moment.",
     });
-    
-    try {
-        const deploymentResult = await deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
 
-        if (deploymentResult.success && deploymentResult.url) {
-            if (shareLink && firestore) {
-                try {
-                    await addDoc(collection(firestore, "deployedSites"), {
-                        projectName: projectName,
-                        url: deploymentResult.url,
-                        createdAt: serverTimestamp()
-                    });
-                    // Refetch links to show the new one
-                    await fetchDeployedLinks();
-                } catch(error) {
-                    console.error("Error sharing link:", error)
-                    toast({
-                        variant: "destructive",
-                        title: "Sharing Failed",
-                        description: "Could not add your link to the public list.",
-                    });
-                }
-            }
-            
-            toast({
-                title: "Deployment Successful!",
-                description: "Your link is permanent and free forever.",
-                duration: 9000,
-                action: (
-                <div className="flex items-center gap-2">
-                    <a href={deploymentResult.url} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" size="sm">View Site</Button>
-                    </a>
-                    <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                        if(deploymentResult.url) {
-                            navigator.clipboard.writeText(deploymentResult.url);
-                            setCopied(true);
-                            setTimeout(() => setCopied(false), 2000);
-                        }
-                    }}
-                    >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    <span className="sr-only">Copy URL</span>
-                    </Button>
-                </div>
-                ),
+    let deploymentResult;
+    try {
+      deploymentResult = await deployToGithub({
+        html: htmlCode,
+        css: cssCode,
+        js: jsCode,
+        projectName,
+        addWatermark,
+      });
+
+      if (deploymentResult.success && deploymentResult.url) {
+        if (shareLink && firestore) {
+          try {
+            await addDoc(collection(firestore, "deployedSites"), {
+              projectName: projectName,
+              url: deploymentResult.url,
+              createdAt: serverTimestamp(),
             });
-        } else {
+            await fetchDeployedLinks();
+          } catch (error) {
+            console.error("Error sharing link:", error);
             toast({
-                variant: "destructive",
-                title: "Deployment Failed",
-                description: deploymentResult.error || "An unknown error occurred.",
+              variant: "destructive",
+              title: "Sharing Failed",
+              description: "Your site was deployed, but could not be added to the public list.",
             });
+          }
         }
-    } catch (error) {
-        console.error("Deployment failed:", error);
+
         toast({
-            variant: "destructive",
-            title: "Deployment Failed",
-            description: "An unexpected error occurred during deployment.",
+          title: "Deployment Successful!",
+          description: "Your link is permanent and free forever.",
+          duration: 9000,
+          action: (
+            <div className="flex items-center gap-2">
+              <a href={deploymentResult.url} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm">View Site</Button>
+              </a>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (deploymentResult?.url) {
+                    navigator.clipboard.writeText(deploymentResult.url);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }
+                }}
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                <span className="sr-only">Copy URL</span>
+              </Button>
+            </div>
+          ),
         });
+      } else {
+        throw new Error(deploymentResult.error || "An unknown error occurred during deployment.");
+      }
+    } catch (error) {
+      console.error("Deployment failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Deployment Failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+      });
     } finally {
-        setIsDeploying(false);
-        setProjectName('');
-        setAddWatermark(true);
-        setShareLink(true);
+      setIsDeploying(false);
+      setProjectName('');
+      setAddWatermark(true);
+      setShareLink(true);
     }
   };
   
@@ -313,86 +315,86 @@ export default function Home() {
             onRun={handleRunCode}
           />
           <main className="flex-1 flex flex-col overflow-y-auto">
-              <div ref={containerRef} className="flex flex-1 flex-col md:flex-row min-h-0 p-2 md:p-4 gap-4">
-                <div 
-                    className="flex flex-col w-full md:h-full overflow-hidden"
-                    style={{ 
-                      width: getSidebarWidth(),
-                      minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
-                    }}
-                >
-                    <CodeEditor
-                        htmlCode={htmlCode}
-                        setHtmlCode={setHtmlCode}
-                        cssCode={cssCode}
-                        setCssCode={setCssCode}
-                        jsCode={jsCode}
-                        setJsCode={setJsCode}
-                    />
-                </div>
-                <div
-                    onMouseDown={handleMouseDown}
-                    className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors rounded-full hidden md:block"
-                />
-                <div 
-                    className="flex flex-col w-full md:h-full overflow-hidden"
-                    style={{ 
-                        width: getPreviewWidth(),
-                        minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
-                    }}
-                >
-                    <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
-                        <TabsList className="grid w-full grid-cols-1">
-                            <TabsTrigger value="preview">Preview</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="preview" className="flex-1 overflow-auto bg-white">
-                            <LivePreview srcDoc={srcDoc} />
-                        </TabsContent>
-                    </Tabs>
-                </div>
+            <div ref={containerRef} className="flex flex-1 flex-col md:flex-row min-h-0 p-2 md:p-4 gap-4">
+              <div 
+                  className="flex flex-col w-full md:h-full overflow-hidden"
+                  style={{ 
+                    width: getSidebarWidth(),
+                    minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
+                  }}
+              >
+                  <CodeEditor
+                      htmlCode={htmlCode}
+                      setHtmlCode={setHtmlCode}
+                      cssCode={cssCode}
+                      setCssCode={setCssCode}
+                      jsCode={jsCode}
+                      setJsCode={setJsCode}
+                  />
               </div>
-              <section className="py-12 md:py-16 bg-secondary/50">
-                  <div className="container mx-auto px-4">
-                      <div className="text-center mb-8">
-                          <h2 className="text-3xl font-bold tracking-tight">All Users App Links</h2>
-                          <p className="text-muted-foreground mt-2">Explore sites deployed by other users.</p>
-                      </div>
-                      {isLoadingLinks ? (
-                          <div className="flex justify-center"><Server className="h-8 w-8 animate-spin" /></div>
-                      ) : deployedLinks.length > 0 ? (
-                          <>
-                              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                                  {deployedLinks.slice(0, 5).map((link) => (
-                                      <Card key={link.id}>
-                                          <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                              <CardTitle className="text-sm font-medium truncate">{link.projectName}</CardTitle>
-                                              <Globe className="h-4 w-4 text-muted-foreground" />
-                                          </CardHeader>
-                                          <CardContent>
-                                              <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
-                                                  {link.url}
-                                              </a>
-                                              <p className="text-xs text-muted-foreground mt-2">
-                                                  {link.createdAt?.toDate() ? new Date(link.createdAt.toDate()).toLocaleString() : 'Just now'}
-                                              </p>
-                                          </CardContent>
-                                      </Card>
-                                  ))}
-                              </div>
-                              {deployedLinks.length > 5 && (
-                                  <div className="mt-8 text-center">
-                                      <Button onClick={() => setIsAllLinksDialogOpen(true)}>Show All</Button>
-                                  </div>
-                              )}
-                          </>
-                      ) : (
-                         <div className="text-center text-muted-foreground py-8">
-                              <Users className="mx-auto h-12 w-12" />
-                              <p className="mt-4">No public links yet. Be the first to share!</p>
-                          </div>
-                      )}
-                  </div>
-              </section>
+              <div
+                  onMouseDown={handleMouseDown}
+                  className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors rounded-full hidden md:block"
+              />
+              <div 
+                  className="flex flex-col w-full md:h-full overflow-hidden"
+                  style={{ 
+                      width: getPreviewWidth(),
+                      minHeight: isClient && window.innerWidth < 768 ? '50vh' : 'auto',
+                  }}
+              >
+                  <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+                      <TabsList className="grid w-full grid-cols-1">
+                          <TabsTrigger value="preview">Preview</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="preview" className="flex-1 overflow-auto bg-white">
+                          <LivePreview srcDoc={srcDoc} />
+                      </TabsContent>
+                  </Tabs>
+              </div>
+            </div>
+            <section className="py-12 md:py-16 bg-secondary/50">
+                <div className="container mx-auto px-4">
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold tracking-tight">All Users App Links</h2>
+                        <p className="text-muted-foreground mt-2">Explore sites deployed by other users.</p>
+                    </div>
+                    {isLoadingLinks ? (
+                        <div className="flex justify-center"><Server className="h-8 w-8 animate-spin" /></div>
+                    ) : deployedLinks.length > 0 ? (
+                        <>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                                {deployedLinks.slice(0, 5).map((link) => (
+                                    <Card key={link.id}>
+                                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                            <CardTitle className="text-sm font-medium truncate">{link.projectName}</CardTitle>
+                                            <Globe className="h-4 w-4 text-muted-foreground" />
+                                        </CardHeader>
+                                        <CardContent>
+                                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
+                                                {link.url}
+                                            </a>
+                                            <p className="text-xs text-muted-foreground mt-2">
+                                                {link.createdAt?.toDate() ? new Date(link.createdAt.toDate()).toLocaleString() : 'Just now'}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                            {deployedLinks.length > 5 && (
+                                <div className="mt-8 text-center">
+                                    <Button onClick={() => setIsAllLinksDialogOpen(true)}>Show All</Button>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                       <div className="text-center text-muted-foreground py-8">
+                            <Users className="mx-auto h-12 w-12" />
+                            <p className="mt-4">No public links yet. Be the first to share!</p>
+                        </div>
+                    )}
+                </div>
+            </section>
           </main>
           <footer className="w-full bg-background text-card-foreground border-t">
               <div className="container mx-auto px-4 py-6 text-xs text-muted-foreground">
