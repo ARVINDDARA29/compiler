@@ -78,6 +78,13 @@ export default function Home() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+
   const handleRunCode = () => {
     setSrcDoc(`
         <html>
@@ -114,16 +121,12 @@ export default function Home() {
       }
     };
     
-    if (typeof window !== 'undefined') {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
     
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      }
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging]);
   
@@ -204,17 +207,19 @@ export default function Home() {
   };
   
   const getSidebarWidth = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    if (!isClient) return '50%';
+    if (window.innerWidth < 768) {
       return '100%';
     }
-    return isDragging ? `calc(${sidebarWidth}%)` : `calc(${sidebarWidth}%)`;
+    return `calc(${sidebarWidth}%)`;
   };
 
   const getPreviewWidth = () => {
-      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      if (!isClient) return '50%';
+      if (window.innerWidth < 768) {
         return '100%';
       }
-      return isDragging ? `calc(${100 - sidebarWidth}%)` : `calc(${100 - sidebarWidth}%)`;
+      return `calc(${100 - sidebarWidth}%)`;
   }
 
 
