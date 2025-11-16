@@ -209,7 +209,9 @@ export default function Home() {
     countdownIntervalRef.current = setInterval(() => {
         setCountdown(prev => {
             if (prev <= 1) {
-                clearInterval(countdownIntervalRef.current!);
+                if (countdownIntervalRef.current) {
+                  clearInterval(countdownIntervalRef.current);
+                }
                 return 0;
             }
             return prev - 1;
@@ -219,33 +221,20 @@ export default function Home() {
     const deploymentPromise = deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
     const timerPromise = new Promise(resolve => setTimeout(resolve, 60000));
 
-    let result;
     try {
-        // Wait for both the deployment and the timer to finish
-        [result] = await Promise.all([deploymentPromise, timerPromise]);
-    } catch (error) {
-        console.error('Deployment failed:', error);
-        result = { success: false, error: error instanceof Error ? error.message : 'An unknown error occurred during deployment.' };
-        // Ensure the timer is cleared if an error occurs
-        if (countdownIntervalRef.current) {
-            clearInterval(countdownIntervalRef.current);
-        }
-    }
+        const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
 
-
-    try {
-        if (result.success && result.url) {
+        if (deploymentResult.success && deploymentResult.url) {
             setDeployments(prev => prev + 1);
 
-            // Now, after the wait, add to firestore if requested
             if (shareLink && firestore) {
                 try {
                     await addDoc(collection(firestore, "deployedSites"), {
                         projectName: projectName,
-                        url: result.url,
+                        url: deploymentResult.url,
                         createdAt: serverTimestamp()
                     });
-                    fetchDeployedLinks(); // Refresh links after sharing
+                    fetchDeployedLinks();
                 } catch(error) {
                     console.error("Error sharing link:", error)
                     toast({
@@ -256,21 +245,20 @@ export default function Home() {
                 }
             }
             
-            // And show the success toast
             toast({
                 title: "Deployment Successful!",
                 description: "Your site is live. The link is permanent and free forever.",
                 duration: 9000,
                 action: (
                 <div className="flex items-center gap-2">
-                    <a href={result.url} target="_blank" rel="noopener noreferrer">
+                    <a href={deploymentResult.url} target="_blank" rel="noopener noreferrer">
                     <Button variant="outline" size="sm">View Site</Button>
                     </a>
                     <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                        navigator.clipboard.writeText(result.url!);
+                        navigator.clipboard.writeText(deploymentResult.url!);
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                     }}
@@ -285,14 +273,17 @@ export default function Home() {
             toast({
                 variant: "destructive",
                 title: "Deployment Failed",
-                description: result.error || "An unknown error occurred.",
+                description: deploymentResult.error || "An unknown error occurred.",
             });
         }
     } catch (error) {
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+        }
         toast({
             variant: "destructive",
             title: "Deployment Failed",
-            description: "An unexpected error occurred while finalizing deployment.",
+            description: "An unexpected error occurred during deployment.",
         });
     } finally {
         setIsDeploying(false);
