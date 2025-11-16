@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Share2 } from 'lucide-react';
+import { Copy, Check, Expand } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -20,8 +20,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 
 const initialHtml = `<h1>Welcome to CodeDeploy!</h1>
 <p>Edit the code on the left to see it live here.</p>
@@ -73,18 +71,16 @@ export default function Home() {
   
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
-  const [shareLink, setShareLink] = useState(true);
 
-  const [deployments, setDeployments] = useState(50000);
-  
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(50);
 
   const containerRef = useRef<HTMLDivElement>(null);
   
   const [isClient, setIsClient] = useState(false);
+  
+  const [isFullScreenPreviewOpen, setIsFullScreenPreviewOpen] = useState(false);
 
-  const firestore = useFirestore();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -146,13 +142,6 @@ export default function Home() {
     return () => clearTimeout(timeout);
   }, [htmlCode, cssCode, jsCode]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDeployments(prev => prev + Math.floor(Math.random() * 5) + 1);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
   const handleDeploy = async () => {
     if (!projectName) {
       toast({
@@ -179,24 +168,12 @@ export default function Home() {
         projectName,
         addWatermark,
       });
-  
+
       const timerPromise = new Promise(resolve => setTimeout(resolve, 30000));
-  
+      
       const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
-  
+
       if (deploymentResult.success && deploymentResult.url) {
-        if (shareLink && firestore) {
-          try {
-            await addDoc(collection(firestore, 'deployedSites'), {
-              projectName: projectName,
-              url: deploymentResult.url,
-              createdAt: serverTimestamp(),
-            });
-          } catch (error) {
-            console.error('Error sharing link:', error);
-          }
-        }
-  
         toast({
           title: 'Deployment Successful!',
           description: 'Your link is permanent and free forever.',
@@ -239,7 +216,6 @@ export default function Home() {
       setIsDeploying(false);
       setProjectName('');
       setAddWatermark(true);
-      setShareLink(true);
     }
   };
   
@@ -294,29 +270,21 @@ export default function Home() {
                 }}
             >
                 <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
-                    <TabsList className="grid w-full grid-cols-1">
-                        <TabsTrigger value="preview">Preview</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="preview" className="flex-1 overflow-auto bg-white">
+                    <div className="flex items-center justify-between pr-2 bg-muted rounded-t-md">
+                        <TabsList className="grid w-full grid-cols-1 bg-muted">
+                            <TabsTrigger value="preview">Preview</TabsTrigger>
+                        </TabsList>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullScreenPreviewOpen(true)}>
+                            <Expand className="h-4 w-4" />
+                            <span className="sr-only">Fullscreen Preview</span>
+                        </Button>
+                    </div>
+                    <TabsContent value="preview" className="flex-1 overflow-auto bg-white mt-0">
                         <LivePreview srcDoc={srcDoc} />
                     </TabsContent>
                 </Tabs>
             </div>
         </main>
-        <footer className="w-full bg-background text-card-foreground border-t">
-            <div className="container mx-auto px-4 py-6 text-xs text-muted-foreground">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p>&copy; {new Date().getFullYear()} CodeDeploy. Made by Bishnoi engineers.</p>
-                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-semibold text-foreground">Total Deployments: {deployments.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <a href="#" className="hover:text-foreground">Terms and Conditions</a>
-                        <a href="#" className="hover:text-foreground">Privacy Policy</a>
-                    </div>
-                </div>
-            </div>
-        </footer>
       </div>
       <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -354,28 +322,17 @@ export default function Home() {
                 </Label>
               </div>
             </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-               <Label htmlFor="share" className="text-right flex flex-col">
-                Share
-                <Share2 className="h-3 w-3 mt-1"/>
-               </Label>
-              <div className="col-span-3 flex items-center space-x-2">
-                <Switch
-                  id="share"
-                  checked={shareLink}
-                  onCheckedChange={setShareLink}
-                />
-                <Label htmlFor="share" className="text-sm font-normal text-muted-foreground">
-                  Add link to public showcase
-                </Label>
-              </div>
-            </div>
           </div>
           <DialogFooter>
             <Button type="button" onClick={handleDeploy} disabled={isDeploying || !projectName}>
               {isDeploying ? 'Deploying...' : 'Deploy to Internet'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isFullScreenPreviewOpen} onOpenChange={setIsFullScreenPreviewOpen}>
+        <DialogContent className="w-screen h-screen max-w-full max-h-full p-0 m-0">
+          <LivePreview srcDoc={srcDoc} />
         </DialogContent>
       </Dialog>
     </>
