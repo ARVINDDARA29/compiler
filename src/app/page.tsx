@@ -193,34 +193,32 @@ export default function Home() {
 
   return (
     <>
-      <div className="flex h-screen w-screen flex-col bg-secondary">
+      <div className="flex min-h-screen w-screen flex-col bg-secondary">
         <AppHeader 
           isDeploying={isDeploying} 
           onDeploy={() => setIsDeployDialogOpen(true)} 
           onRun={handleRunCode}
         />
-        <main ref={containerRef} className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        <main ref={containerRef} className="flex flex-1 flex-col md:flex-row md:h-[calc(100vh-11rem)]">
           <div 
-            className="flex-1 flex flex-col md:h-full md:w-1/2 overflow-hidden"
+            className="flex-1 flex flex-col min-h-[50vh] md:min-h-0 md:h-full overflow-hidden p-2 md:p-4"
             style={{ width: `calc(${sidebarWidth}%)` }}
           >
-             <div className="p-2 md:p-4 flex-1 flex flex-col min-h-0">
-                <CodeEditor
-                    htmlCode={htmlCode}
-                    setHtmlCode={setHtmlCode}
-                    cssCode={cssCode}
-                    setCssCode={setCssCode}
-                    jsCode={jsCode}
-                    setJsCode={setJsCode}
-                />
-             </div>
+            <CodeEditor
+                htmlCode={htmlCode}
+                setHtmlCode={setHtmlCode}
+                cssCode={cssCode}
+                setCssCode={setCssCode}
+                jsCode={jsCode}
+                setJsCode={setJsCode}
+            />
           </div>
           <div
             onMouseDown={handleMouseDown}
             className="w-full md:w-2 h-2 md:h-full cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors"
           />
            <div 
-            className="flex-1 flex flex-col p-2 md:p-4 md:pl-0 min-h-0"
+            className="flex-1 flex flex-col min-h-[50vh] md:min-h-0 p-2 md:p-4 md:pl-0"
             style={{ width: `calc(${100 - sidebarWidth}%)` }}
           >
              <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
@@ -233,16 +231,19 @@ export default function Home() {
             </Tabs>
           </div>
         </main>
-        <footer className="px-4 py-3 border-t bg-card text-card-foreground">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center gap-4">
+        <footer className="w-full bg-card text-card-foreground border-t">
+            <div className="container mx-auto px-4 py-6 text-xs text-muted-foreground">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p>&copy; {new Date().getFullYear()} CodeDeploy. Made by Bishnoi engineers.</p>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         <a href="#" className="hover:text-foreground">Terms and Conditions</a>
                         <a href="#" className="hover:text-foreground">Privacy Policy</a>
                     </div>
                 </div>
-                <p>Deployments: <span className="font-semibold text-foreground">{deployments.toLocaleString()}</span></p>
+                 <div className="border-t my-4"></div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <p>Total Deployments: <span className="font-semibold text-foreground">{deployments.toLocaleString()}</span></p>
+                </div>
             </div>
         </footer>
       </div>

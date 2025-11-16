@@ -22,39 +22,37 @@ const CodeEditor: FC<CodeEditorProps> = ({
   setJsCode,
 }) => {
   return (
-    <div className="flex h-full flex-col gap-4">
-      <Tabs defaultValue="html" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="html">HTML</TabsTrigger>
-          <TabsTrigger value="css">CSS</TabsTrigger>
-          <TabsTrigger value="js">JavaScript</TabsTrigger>
-        </TabsList>
-        <TabsContent value="html" className="flex-1 overflow-y-auto">
-          <Textarea
-            value={htmlCode}
-            onChange={(e) => setHtmlCode(e.target.value)}
-            className="h-full w-full resize-none border-0 font-code text-sm focus-visible:ring-0"
-            placeholder="Type your HTML here..."
-          />
-        </TabsContent>
-        <TabsContent value="css" className="flex-1 overflow-y-auto">
-          <Textarea
-            value={cssCode}
-            onChange={(e) => setCssCode(e.target.value)}
-            className="h-full w-full resize-none border-0 font-code text-sm focus-visible:ring-0"
-            placeholder="Type your CSS here..."
-          />
-        </TabsContent>
-        <TabsContent value="js" className="flex-1 overflow-y-auto">
-          <Textarea
-            value={jsCode}
-            onChange={(e) => setJsCode(e.target.value)}
-            className="h-full w-full resize-none border-0 font-code text-sm focus-visible:ring-0"
-            placeholder="Type your JavaScript here..."
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
+    <Tabs defaultValue="html" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="html">HTML</TabsTrigger>
+        <TabsTrigger value="css">CSS</TabsTrigger>
+        <TabsTrigger value="js">JavaScript</TabsTrigger>
+      </TabsList>
+      <TabsContent value="html" className="flex-1 overflow-y-auto">
+        <Textarea
+          value={htmlCode}
+          onChange={(e) => setHtmlCode(e.target.value)}
+          className="h-full w-full resize-none border-0 font-code text-sm focus-visible:ring-0"
+          placeholder="Type your HTML here..."
+        />
+      </TabsContent>
+      <TabsContent value="css" className="flex-1 overflow-y-auto">
+        <Textarea
+          value={cssCode}
+          onChange={(e) => setCssCode(e.target.value)}
+          className="h-full w-full resize-none border-0 font-code text-sm focus-visible:ring-0"
+          placeholder="Type your CSS here..."
+        />
+      </TabsContent>
+      <TabsContent value="js" className="flex-1 overflow-y-auto">
+        <Textarea
+          value={jsCode}
+          onChange={(e) => setJsCode(e.target.value)}
+          className="h-full w-full resize-none border-0 font-code text-sm focus-visible:ring-0"
+          placeholder="Type your JavaScript here..."
+        />
+      </TabsContent>
+    </Tabs>
   );
 };
 
