@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Share2, Globe, Users, Server } from 'lucide-react';
+import { Copy, Check, Share2 } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -20,14 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { addDoc, collection, serverTimestamp, query, orderBy, getDocs } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 
 const initialHtml = `<h1>Welcome to CodeDeploy!</h1>
@@ -67,13 +60,6 @@ button.addEventListener('click', () => {
 });
 `;
 
-type DeployedLink = {
-    id: string;
-    projectName: string;
-    url: string;
-    createdAt: any;
-};
-
 export default function Home() {
   const [htmlCode, setHtmlCode] = useState(initialHtml);
   const [cssCode, setCssCode] = useState(initialCss);
@@ -84,17 +70,15 @@ export default function Home() {
   const [isDeploying, setIsDeploying] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
-  const [isAllLinksDialogOpen, setIsAllLinksDialogOpen] = useState(false);
+  
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
   const [shareLink, setShareLink] = useState(true);
 
   const [deployments, setDeployments] = useState(50000);
-  const [deployedLinks, setDeployedLinks] = useState<DeployedLink[]>([]);
-  const [isLoadingLinks, setIsLoadingLinks] = useState(true);
-
+  
   const [isDragging, setIsDragging] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(50); // Initial width in percentage
+  const [sidebarWidth, setSidebarWidth] = useState(50);
 
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -103,40 +87,9 @@ export default function Home() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const fetchDeployedLinks = async () => {
-    if (!firestore) return;
-    setIsLoadingLinks(true);
-    try {
-        const linksCollection = collection(firestore, 'deployedSites');
-        const q = query(linksCollection, orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(q);
-        const links: DeployedLink[] = [];
-        querySnapshot.forEach((doc) => {
-            links.push({ id: doc.id, ...doc.data() } as DeployedLink);
-        });
-        setDeployedLinks(links);
-    } catch (error) {
-        console.error("Error fetching deployed links:", error);
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not fetch shared links.",
-        });
-    } finally {
-        setIsLoadingLinks(false);
-    }
-  };
-  
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    if(isClient && firestore) {
-      fetchDeployedLinks();
-    }
-  }, [isClient, firestore]);
-
 
   const handleRunCode = () => {
     setSrcDoc(`
@@ -215,11 +168,10 @@ export default function Home() {
   
     toast({
       title: 'Deploying Project...',
-      description: 'Your site is being deployed. This may take a moment.',
+      description: 'Your site will be ready in about 30 seconds.',
     });
   
     try {
-      // Start deployment and timer simultaneously
       const deploymentPromise = deployToGithub({
         html: htmlCode,
         css: cssCode,
@@ -230,7 +182,7 @@ export default function Home() {
   
       const timerPromise = new Promise(resolve => setTimeout(resolve, 30000));
   
-      // Wait for both to complete
+      // Wait for both the deployment to be sent and the timer to finish
       const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
   
       if (deploymentResult.success && deploymentResult.url) {
@@ -241,14 +193,9 @@ export default function Home() {
               url: deploymentResult.url,
               createdAt: serverTimestamp(),
             });
-            await fetchDeployedLinks();
           } catch (error) {
             console.error('Error sharing link:', error);
-            toast({
-              variant: 'destructive',
-              title: 'Sharing Failed',
-              description: 'Your site was deployed, but could not be added to the public list.',
-            });
+            // Non-blocking error for the user
           }
         }
   
@@ -359,49 +306,6 @@ export default function Home() {
                 </Tabs>
             </div>
           </div>
-          
-          <section className="py-12 md:py-16 bg-secondary/50 border-t">
-              <div className="container mx-auto px-4">
-                  <div className="text-center mb-8">
-                      <h2 className="text-3xl font-bold tracking-tight">All Users App Links</h2>
-                      <p className="text-muted-foreground mt-2">Explore sites deployed by other users.</p>
-                  </div>
-                  {isLoadingLinks ? (
-                      <div className="flex justify-center"><Server className="h-8 w-8 animate-spin" /></div>
-                  ) : deployedLinks.length > 0 ? (
-                      <>
-                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                              {deployedLinks.slice(0, 5).map((link) => (
-                                  <Card key={link.id}>
-                                      <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                          <CardTitle className="text-sm font-medium truncate">{link.projectName}</CardTitle>
-                                          <Globe className="h-4 w-4 text-muted-foreground" />
-                                      </CardHeader>
-                                      <CardContent>
-                                          <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
-                                              {link.url}
-                                          </a>
-                                          <p className="text-xs text-muted-foreground mt-2">
-                                              {link.createdAt?.toDate() ? new Date(link.createdAt.toDate()).toLocaleString() : 'Just now'}
-                                          </p>
-                                      </CardContent>
-                                  </Card>
-                              ))}
-                          </div>
-                          {deployedLinks.length > 5 && (
-                              <div className="mt-8 text-center">
-                                  <Button onClick={() => setIsAllLinksDialogOpen(true)}>Show All</Button>
-                              </div>
-                          )}
-                      </>
-                  ) : (
-                      <div className="text-center text-muted-foreground py-8">
-                          <Users className="mx-auto h-12 w-12" />
-                          <p className="mt-4">No public links yet. Be the first to share!</p>
-                      </div>
-                  )}
-              </div>
-          </section>
         </main>
         <footer className="w-full bg-background text-card-foreground border-t">
             <div className="container mx-auto px-4 py-6 text-xs text-muted-foreground">
@@ -478,39 +382,5 @@ export default function Home() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={isAllLinksDialogOpen} onOpenChange={setIsAllLinksDialogOpen}>
-        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>All Deployed Sites</DialogTitle>
-            <DialogDescription>
-              Explore all sites deployed by the community.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-1">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {deployedLinks.map((link) => (
-                <Card key={link.id}>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium truncate">{link.projectName}</CardTitle>
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
-                      {link.url}
-                    </a>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {link.createdAt?.toDate() ? new Date(link.createdAt.toDate()).toLocaleString() : 'Just now'}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAllLinksDialogOpen(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
-}
