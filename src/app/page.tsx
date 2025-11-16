@@ -201,10 +201,10 @@ export default function Home() {
         />
         <main ref={containerRef} className="flex-1 flex flex-col md:flex-row overflow-hidden">
           <div 
-            className="w-full flex-1 md:w-1/2 md:h-full overflow-y-auto"
+            className="flex-1 flex flex-col md:h-full md:w-1/2 overflow-hidden"
             style={{ width: `calc(${sidebarWidth}%)` }}
           >
-             <div className="p-2 md:p-4 h-full">
+             <div className="p-2 md:p-4 flex-1 flex flex-col min-h-0">
                 <CodeEditor
                     htmlCode={htmlCode}
                     setHtmlCode={setHtmlCode}
@@ -220,14 +220,14 @@ export default function Home() {
             className="w-full md:w-2 h-2 md:h-full cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors"
           />
            <div 
-            className="w-full flex-1 md:w-1/2 md:h-full flex flex-col p-2 md:p-4 md:pl-0"
+            className="flex-1 flex flex-col p-2 md:p-4 md:pl-0 min-h-0"
             style={{ width: `calc(${100 - sidebarWidth}%)` }}
           >
              <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
                 <TabsList className="grid w-full grid-cols-1">
                     <TabsTrigger value="preview">Preview</TabsTrigger>
                 </TabsList>
-                <TabsContent value="preview" className="flex-1 overflow-hidden">
+                <TabsContent value="preview" className="flex-1 overflow-auto">
                     <LivePreview srcDoc={srcDoc} />
                 </TabsContent>
             </Tabs>
