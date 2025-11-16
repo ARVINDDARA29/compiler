@@ -92,10 +92,7 @@ export default function Home() {
       `);
   }
 
-  // Initial run
-  useEffect(() => {
-    handleRunCode();
-  }, [htmlCode, cssCode, jsCode]);
+  // Initial run is removed, run only on button click
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -106,22 +103,27 @@ export default function Home() {
     setIsDragging(false);
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging && containerRef.current) {
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const newSidebarWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-      if (newSidebarWidth > 20 && newSidebarWidth < 80) { // Constraint resizing
-        setSidebarWidth(newSidebarWidth);
-      }
-    }
-  };
-
   useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging && containerRef.current) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const newSidebarWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+        if (newSidebarWidth > 20 && newSidebarWidth < 80) { // Constraint resizing
+          setSidebarWidth(newSidebarWidth);
+        }
+      }
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      }
     };
   }, [isDragging]);
   
@@ -150,50 +152,75 @@ export default function Home() {
     setIsDeployDialogOpen(false);
 
     const deployPromise = deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
+    
+    // Show deploying state for at least 60 seconds
     const delayPromise = new Promise(resolve => setTimeout(resolve, 60000));
 
-    const [result] = await Promise.all([deployPromise, delayPromise]);
+    try {
+        const [result] = await Promise.all([deployPromise, delayPromise]);
 
-    setIsDeploying(false);
-
-    if (result.success && result.url) {
-      setDeployments(prev => prev + 1);
-      toast({
-        title: "Deployment Successful!",
-        description: "Your code has been pushed to GitHub.",
-        action: (
-          <div className="flex items-center gap-2">
-            <a href={result.url} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm">View Site</Button>
-            </a>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(result.url!);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              <span className="sr-only">Copy URL</span>
-            </Button>
-          </div>
-        ),
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Deployment Failed",
-        description: result.error || "An unknown error occurred.",
-      });
+        if (result.success && result.url) {
+        setDeployments(prev => prev + 1);
+        toast({
+            title: "Deployment Successful!",
+            description: "Your code has been pushed to GitHub.",
+            action: (
+            <div className="flex items-center gap-2">
+                <a href={result.url} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm">View Site</Button>
+                </a>
+                <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                    navigator.clipboard.writeText(result.url!);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                }}
+                >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                <span className="sr-only">Copy URL</span>
+                </Button>
+            </div>
+            ),
+        });
+        } else {
+        toast({
+            variant: "destructive",
+            title: "Deployment Failed",
+            description: result.error || "An unknown error occurred.",
+        });
+        }
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Deployment Failed",
+            description: "An unexpected error occurred during deployment.",
+        });
+    } finally {
+        setIsDeploying(false);
+        setProjectName('');
     }
-    setProjectName('');
   };
+  
+  const getSidebarWidth = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return '100%';
+    }
+    return isDragging ? `calc(${sidebarWidth}%)` : `calc(${sidebarWidth}%)`;
+  };
+
+  const getPreviewWidth = () => {
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        return '100%';
+      }
+      return isDragging ? `calc(${100 - sidebarWidth}%)` : `calc(${100 - sidebarWidth}%)`;
+  }
+
 
   return (
     <>
-      <div className="flex h-screen w-screen flex-col bg-secondary overflow-auto">
+      <div className="flex h-screen w-screen flex-col bg-secondary overflow-y-auto">
         <AppHeader 
           isDeploying={isDeploying} 
           onDeploy={() => setIsDeployDialogOpen(true)} 
@@ -201,8 +228,11 @@ export default function Home() {
         />
         <div ref={containerRef} className="flex flex-1 flex-col md:flex-row">
           <div 
-            className="flex flex-col min-h-[50vh] w-full md:min-h-0 overflow-hidden p-2 md:p-4"
-            style={{ width: `calc(${sidebarWidth}%)` }}
+            className="flex flex-col w-full overflow-hidden p-2 md:p-4"
+            style={{ 
+              width: getSidebarWidth(),
+              minHeight: '50vh',
+             }}
           >
             <CodeEditor
                 htmlCode={htmlCode}
@@ -218,8 +248,11 @@ export default function Home() {
             className="w-full md:w-2 h-2 md:h-full cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors hidden md:block"
           />
            <div 
-            className="flex flex-col min-h-[50vh] w-full md:min-h-0 p-2 md:p-4 md:pl-0"
-            style={{ width: `calc(${100 - sidebarWidth}%)` }}
+            className="flex flex-col w-full p-2 md:p-4 md:pl-0"
+            style={{ 
+                width: getPreviewWidth(),
+                minHeight: '50vh',
+            }}
           >
              <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
                 <TabsList className="grid w-full grid-cols-1">
