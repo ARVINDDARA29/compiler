@@ -1,0 +1,36 @@
+{
+  "entities": {
+    "deployedSite": {
+      "title": "Deployed Site",
+      "description": "Represents a site deployed by a user.",
+      "type": "object",
+      "properties": {
+        "projectName": {
+          "type": "string",
+          "description": "The name of the project."
+        },
+        "url": {
+          "type": "string",
+          "description": "The URL of the deployed site."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the site was deployed."
+        }
+      },
+      "required": ["projectName", "url", "createdAt"]
+    }
+  },
+  "auth": {
+    "providers": []
+  },
+  "firestore": {
+    "/deployedSites/{siteId}": {
+      "schema": {
+        "$ref": "#/entities/deployedSite"
+      },
+      "description": "Collection of all publicly shared deployed sites."
+    }
+  }
+}

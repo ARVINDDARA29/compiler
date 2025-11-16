@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Play } from 'lucide-react';
+import { Copy, Check, Share2, Globe, Users, Server } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -20,6 +20,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { addDoc, collection, serverTimestamp, query, orderBy, getDocs } from 'firebase/firestore';
+import { useFirestore } from '@/firebase/provider';
 
 const initialHtml = `<h1>Welcome to CodeDeploy!</h1>
 <p>Edit the code on the left to see it live here.</p>
@@ -58,6 +67,13 @@ button.addEventListener('click', () => {
 });
 `;
 
+type DeployedLink = {
+    id: string;
+    projectName: string;
+    url: string;
+    createdAt: any;
+};
+
 export default function Home() {
   const [htmlCode, setHtmlCode] = useState(initialHtml);
   const [cssCode, setCssCode] = useState(initialCss);
@@ -70,8 +86,12 @@ export default function Home() {
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
+  const [shareLink, setShareLink] = useState(true);
 
   const [deployments, setDeployments] = useState(50000);
+  const [deployedLinks, setDeployedLinks] = useState<DeployedLink[]>([]);
+  const [isLoadingLinks, setIsLoadingLinks] = useState(true);
+
 
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(50); // Initial width in percentage
@@ -80,9 +100,36 @@ export default function Home() {
 
   const [isClient, setIsClient] = useState(false);
 
+  const firestore = useFirestore();
+
+  const fetchDeployedLinks = async () => {
+    if (!firestore) return;
+    setIsLoadingLinks(true);
+    try {
+        const linksCollection = collection(firestore, 'deployedSites');
+        const q = query(linksCollection, orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const links: DeployedLink[] = [];
+        querySnapshot.forEach((doc) => {
+            links.push({ id: doc.id, ...doc.data() } as DeployedLink);
+        });
+        setDeployedLinks(links);
+    } catch (error) {
+        console.error("Error fetching deployed links:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not fetch shared links.",
+        });
+    } finally {
+        setIsLoadingLinks(false);
+    }
+  };
+  
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    fetchDeployedLinks();
+  }, [firestore]);
 
 
   const handleRunCode = () => {
@@ -154,6 +201,11 @@ export default function Home() {
     setIsDeploying(true);
     setIsDeployDialogOpen(false);
 
+    toast({
+        title: "Deploying Project...",
+        description: "Your site is being deployed. This may take a moment.",
+    });
+
     const deployPromise = deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
     
     // Show deploying state for at least 60 seconds
@@ -163,36 +215,56 @@ export default function Home() {
         const [result] = await Promise.all([deployPromise, delayPromise]);
 
         if (result.success && result.url) {
-        setDeployments(prev => prev + 1);
-        toast({
-            title: "Deployment Successful!",
-            description: "Your code has been pushed to GitHub.",
-            action: (
-            <div className="flex items-center gap-2">
-                <a href={result.url} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm">View Site</Button>
-                </a>
-                <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                    navigator.clipboard.writeText(result.url!);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                }}
-                >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                <span className="sr-only">Copy URL</span>
-                </Button>
-            </div>
-            ),
-        });
+            setDeployments(prev => prev + 1);
+
+            if (shareLink && firestore) {
+                try {
+                    await addDoc(collection(firestore, "deployedSites"), {
+                        projectName: projectName,
+                        url: result.url,
+                        createdAt: serverTimestamp()
+                    });
+                    fetchDeployedLinks(); // Refresh links
+                } catch(error) {
+                    console.error("Error sharing link:", error)
+                    toast({
+                        variant: "destructive",
+                        title: "Sharing Failed",
+                        description: "Could not add your link to the public list.",
+                    });
+                }
+            }
+
+            toast({
+                title: "Deployment Successful!",
+                description: "Your site is live. The link is permanent and free forever.",
+                duration: 9000,
+                action: (
+                <div className="flex items-center gap-2">
+                    <a href={result.url} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm">View Site</Button>
+                    </a>
+                    <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                        navigator.clipboard.writeText(result.url!);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                    }}
+                    >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    <span className="sr-only">Copy URL</span>
+                    </Button>
+                </div>
+                ),
+            });
         } else {
-        toast({
-            variant: "destructive",
-            title: "Deployment Failed",
-            description: result.error || "An unknown error occurred.",
-        });
+            toast({
+                variant: "destructive",
+                title: "Deployment Failed",
+                description: result.error || "An unknown error occurred.",
+            });
         }
     } catch (error) {
         toast({
@@ -203,11 +275,13 @@ export default function Home() {
     } finally {
         setIsDeploying(false);
         setProjectName('');
+        setAddWatermark(true);
+        setShareLink(true);
     }
   };
   
   const getSidebarWidth = () => {
-    if (!isClient) return '50%';
+    if (!isClient) return '100%';
     if (window.innerWidth < 768) {
       return '100%';
     }
@@ -215,7 +289,7 @@ export default function Home() {
   };
 
   const getPreviewWidth = () => {
-      if (!isClient) return '50%';
+      if (!isClient) return '100%';
       if (window.innerWidth < 768) {
         return '100%';
       }
@@ -231,45 +305,82 @@ export default function Home() {
           onDeploy={() => setIsDeployDialogOpen(true)} 
           onRun={handleRunCode}
         />
-        <div ref={containerRef} className="flex flex-1 flex-col md:flex-row">
-          <div 
-            className="flex flex-col w-full overflow-hidden p-2 md:p-4"
-            style={{ 
-              width: getSidebarWidth(),
-              minHeight: '50vh',
-             }}
-          >
-            <CodeEditor
-                htmlCode={htmlCode}
-                setHtmlCode={setHtmlCode}
-                cssCode={cssCode}
-                setCssCode={setCssCode}
-                jsCode={jsCode}
-                setJsCode={setJsCode}
-            />
-          </div>
-          <div
-            onMouseDown={handleMouseDown}
-            className="w-full md:w-2 h-2 md:h-full cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors hidden md:block"
-          />
-           <div 
-            className="flex flex-col w-full p-2 md:p-4 md:pl-0"
-            style={{ 
-                width: getPreviewWidth(),
+        <main className="flex-1 flex flex-col">
+            <div ref={containerRef} className="flex flex-1 flex-col md:flex-row">
+            <div 
+                className="flex flex-col w-full overflow-hidden p-2 md:p-4"
+                style={{ 
+                width: getSidebarWidth(),
                 minHeight: '50vh',
-            }}
-          >
-             <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
-                <TabsList className="grid w-full grid-cols-1">
-                    <TabsTrigger value="preview">Preview</TabsTrigger>
-                </TabsList>
-                <TabsContent value="preview" className="flex-1 overflow-auto">
-                    <LivePreview srcDoc={srcDoc} />
-                </TabsContent>
-            </Tabs>
-          </div>
-        </div>
-        <footer className="w-full bg-card text-card-foreground border-t mt-auto">
+                }}
+            >
+                <CodeEditor
+                    htmlCode={htmlCode}
+                    setHtmlCode={setHtmlCode}
+                    cssCode={cssCode}
+                    setCssCode={setCssCode}
+                    jsCode={jsCode}
+                    setJsCode={setJsCode}
+                />
+            </div>
+            <div
+                onMouseDown={handleMouseDown}
+                className="w-full md:w-2 h-2 md:h-full cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors hidden md:block"
+            />
+            <div 
+                className="flex flex-col w-full p-2 md:p-4 md:pl-0"
+                style={{ 
+                    width: getPreviewWidth(),
+                    minHeight: '50vh',
+                }}
+            >
+                <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+                    <TabsList className="grid w-full grid-cols-1">
+                        <TabsTrigger value="preview">Preview</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="preview" className="flex-1 overflow-auto">
+                        <LivePreview srcDoc={srcDoc} />
+                    </TabsContent>
+                </Tabs>
+            </div>
+            </div>
+            <section className="py-12 md:py-16 bg-background">
+                <div className="container mx-auto px-4">
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold tracking-tight">All Users App Links</h2>
+                        <p className="text-muted-foreground mt-2">Explore sites deployed by other users.</p>
+                    </div>
+                    {isLoadingLinks ? (
+                        <div className="flex justify-center"><Server className="h-8 w-8 animate-spin" /></div>
+                    ) : deployedLinks.length > 0 ? (
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {deployedLinks.map((link) => (
+                                <Card key={link.id}>
+                                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                        <CardTitle className="text-sm font-medium">{link.projectName}</CardTitle>
+                                        <Globe className="h-4 w-4 text-muted-foreground" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
+                                            {link.url}
+                                        </a>
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            {new Date(link.createdAt?.toDate()).toLocaleString()}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                       <div className="text-center text-muted-foreground py-8">
+                            <Users className="mx-auto h-12 w-12" />
+                            <p className="mt-4">No public links yet. Be the first to share!</p>
+                        </div>
+                    )}
+                </div>
+            </section>
+        </main>
+        <footer className="w-full bg-card text-card-foreground border-t">
             <div className="container mx-auto px-4 py-6 text-xs text-muted-foreground">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p>&copy; {new Date().getFullYear()} CodeDeploy. Made by Bishnoi engineers.</p>
@@ -290,7 +401,7 @@ export default function Home() {
           <DialogHeader>
             <DialogTitle>Deploy Project</DialogTitle>
             <DialogDescription>
-              Enter a name for your project. This will be used for the GitHub repository path.
+              Your link will be permanent and always free. Deploy your site to the web in one click.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -321,10 +432,26 @@ export default function Home() {
                 </Label>
               </div>
             </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+               <Label htmlFor="share" className="text-right flex flex-col">
+                Share
+                <Share2 className="h-3 w-3 mt-1"/>
+               </Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <Switch
+                  id="share"
+                  checked={shareLink}
+                  onCheckedChange={setShareLink}
+                />
+                <Label htmlFor="share" className="text-sm font-normal text-muted-foreground">
+                  Add link to public showcase
+                </Label>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" onClick={handleDeploy} disabled={isDeploying || !projectName}>
-              {isDeploying ? 'Deploying...' : 'Deploy'}
+              {isDeploying ? 'Deploying...' : 'Deploy to Internet'}
             </Button>
           </DialogFooter>
         </DialogContent>
