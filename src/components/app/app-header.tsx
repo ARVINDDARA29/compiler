@@ -1,17 +1,16 @@
 'use client';
 
 import type { FC } from 'react';
-import { Loader2, Rocket, Play, Clock } from 'lucide-react';
+import { Loader2, Rocket, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AppHeaderProps {
   isDeploying: boolean;
   onDeploy: () => void;
   onRun: () => void;
-  countdown: number;
 }
 
-const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, countdown }) => {
+const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun }) => {
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-3">
@@ -28,11 +27,6 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, countdown
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Deploying...
-              {countdown > 0 && (
-                <span className="ml-2 flex items-center gap-1 text-xs tabular-nums">
-                    <Clock className="h-3 w-3" /> {countdown}s
-                </span>
-              )}
             </>
           ) : (
             'Deploy'
@@ -44,3 +38,5 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, countdown
 };
 
 export default AppHeader;
+
+    

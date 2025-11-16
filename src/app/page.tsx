@@ -82,7 +82,6 @@ export default function Home() {
   const [srcDoc, setSrcDoc] = useState('');
   
   const [isDeploying, setIsDeploying] = useState(false);
-  const [countdown, setCountdown] = useState(0);
   const [projectName, setProjectName] = useState('');
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
   const [isAllLinksDialogOpen, setIsAllLinksDialogOpen] = useState(false);
@@ -98,8 +97,7 @@ export default function Home() {
   const [sidebarWidth, setSidebarWidth] = useState(50); // Initial width in percentage
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
+  
   const [isClient, setIsClient] = useState(false);
 
   const firestore = useFirestore();
@@ -203,30 +201,14 @@ export default function Home() {
     
     setIsDeploying(true);
     setIsDeployDialogOpen(false);
-    setCountdown(60);
 
     toast({
         title: "Deploying Project...",
         description: "Your site is being deployed. This may take a moment.",
     });
     
-    countdownIntervalRef.current = setInterval(() => {
-        setCountdown(prev => {
-            if (prev <= 1) {
-                if (countdownIntervalRef.current) {
-                  clearInterval(countdownIntervalRef.current);
-                }
-                return 0;
-            }
-            return prev - 1;
-        });
-    }, 1000);
-
-    const deploymentPromise = deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
-    const timerPromise = new Promise(resolve => setTimeout(resolve, 60000));
-
     try {
-        const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
+        const deploymentResult = await deployToGithub({ html: htmlCode, css: cssCode, js: jsCode, projectName, addWatermark });
 
         if (deploymentResult && deploymentResult.success && deploymentResult.url) {
             setDeployments(prev => prev + 1);
@@ -289,11 +271,7 @@ export default function Home() {
             description: "An unexpected error occurred during deployment.",
         });
     } finally {
-        if (countdownIntervalRef.current) {
-          clearInterval(countdownIntervalRef.current);
-        }
         setIsDeploying(false);
-        setCountdown(0);
         setProjectName('');
         setAddWatermark(true);
         setShareLink(true);
@@ -321,7 +299,6 @@ export default function Home() {
           isDeploying={isDeploying} 
           onDeploy={() => setIsDeployDialogOpen(true)} 
           onRun={handleRunCode}
-          countdown={countdown}
         />
         <main className="flex-1 flex flex-col">
             <div ref={containerRef} className="flex flex-1 flex-col md:flex-row min-h-0">
@@ -517,3 +494,5 @@ export default function Home() {
     </>
   );
 }
+
+    
