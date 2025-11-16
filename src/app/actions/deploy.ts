@@ -5,13 +5,13 @@ import { z } from 'zod';
 const GITHUB_TOKEN = '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';
 const REPO_OWNER = 'adbossappmaker';
 const REPO_NAME = 'sites';
-const FILE_PATH = 'index.html';
 const BRANCH = 'main';
 
 const schema = z.object({
   html: z.string(),
   css: z.string(),
   js: z.string(),
+  projectName: z.string().min(1, 'Project name is required.'),
 });
 
 type DeployResult = {
@@ -20,13 +20,17 @@ type DeployResult = {
   url?: string;
 };
 
-export async function deployToGithub(data: { html: string; css: string; js: string }): Promise<DeployResult> {
+export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string }): Promise<DeployResult> {
   const validation = schema.safeParse(data);
   if (!validation.success) {
-    return { success: false, error: 'Invalid input.' };
+    const formattedErrors = validation.error.format();
+    const errorMessage = formattedErrors.projectName?._errors[0] ?? 'Invalid input.';
+    return { success: false, error: errorMessage };
   }
 
-  const { html, css, js } = validation.data;
+  const { html, css, js, projectName } = validation.data;
+  
+  const FILE_PATH = `${projectName}/index.html`;
 
   const fileContent = `
 <!DOCTYPE html>
@@ -34,7 +38,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Deployed with CodeDeploy</title>
+  <title>${projectName}</title>
   <style>
     ${css}
   </style>
@@ -81,7 +85,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
         'X-GitHub-Api-Version': '2022-11-28',
       },
       body: JSON.stringify({
-        message: `feat: Deploy site via CodeDeploy [${new Date().toISOString()}]`,
+        message: `feat: Deploy site '${projectName}' via CodeDeploy [${new Date().toISOString()}]`,
         content: contentEncoded,
         sha: existingFileSha,
         branch: BRANCH,
@@ -93,9 +97,9 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
       return { success: false, error: `GitHub API error: ${errorData.message || putFileRes.statusText}` };
     }
 
-    const commitData = await putFileRes.json();
+    const deployedUrl = `https://${REPO_OWNER}.github.io/${REPO_NAME}/${projectName}/`;
 
-    return { success: true, url: commitData.content.html_url };
+    return { success: true, url: deployedUrl };
   } catch (error) {
     console.error('Deployment failed:', error);
     return { success: false, error: error instanceof Error ? error.message : 'An unknown error occurred during deployment.' };
