@@ -33,7 +33,7 @@ const CodeEditor: FC<CodeEditorProps> = ({
           <Textarea
             value={htmlCode}
             onChange={(e) => setHtmlCode(e.target.value)}
-            className="h-full min-h-[calc(100vh-200px)] resize-none border-0 font-code text-sm focus-visible:ring-0"
+            className="h-full min-h-[300px] md:min-h-[calc(100vh-200px)] resize-none border-0 font-code text-sm focus-visible:ring-0"
             placeholder="Type your HTML here..."
           />
         </TabsContent>
@@ -41,7 +41,7 @@ const CodeEditor: FC<CodeEditorProps> = ({
           <Textarea
             value={cssCode}
             onChange={(e) => setCssCode(e.target.value)}
-            className="h-full min-h-[calc(100vh-200px)] resize-none border-0 font-code text-sm focus-visible:ring-0"
+            className="h-full min-h-[300px] md:min-h-[calc(100vh-200px)] resize-none border-0 font-code text-sm focus-visible:ring-0"
             placeholder="Type your CSS here..."
           />
         </TabsContent>
@@ -49,7 +49,7 @@ const CodeEditor: FC<CodeEditorProps> = ({
           <Textarea
             value={jsCode}
             onChange={(e) => setJsCode(e.target.value)}
-            className="h-full min-h-[calc(100vh-200px)] resize-none border-0 font-code text-sm focus-visible:ring-0"
+            className="h-full min-h-[300px] md:min-h-[calc(100vh-200px)] resize-none border-0 font-code text-sm focus-visible:ring-0"
             placeholder="Type your JavaScript here..."
           />
         </TabsContent>
