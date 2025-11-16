@@ -224,7 +224,7 @@ export default function Home() {
     try {
         const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
 
-        if (deploymentResult.success && deploymentResult.url) {
+        if (deploymentResult && deploymentResult.success && deploymentResult.url) {
             setDeployments(prev => prev + 1);
 
             if (shareLink && firestore) {
@@ -273,19 +273,19 @@ export default function Home() {
             toast({
                 variant: "destructive",
                 title: "Deployment Failed",
-                description: deploymentResult.error || "An unknown error occurred.",
+                description: (deploymentResult && deploymentResult.error) || "An unknown error occurred.",
             });
         }
     } catch (error) {
-        if (countdownIntervalRef.current) {
-          clearInterval(countdownIntervalRef.current);
-        }
         toast({
             variant: "destructive",
             title: "Deployment Failed",
             description: "An unexpected error occurred during deployment.",
         });
     } finally {
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+        }
         setIsDeploying(false);
         setCountdown(0);
         setProjectName('');
