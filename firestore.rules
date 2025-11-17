@@ -32,21 +32,17 @@ service cloud.firestore {
       allow create: if isOwner() && request.resource.data.id == userId;
       allow update: if isOwner() && request.resource.data.id == userId;
       allow delete: if false; // Users should not be able to delete their own profiles easily
-    }
-
-    /**
-     * @description: Controls access to deployed sites for a specific user.
-     * @path: /users/{userId}/deployedSites/{siteId}
-     */
-    match /users/{userId}/deployedSites/{siteId} {
-      function isOwner() {
-        return request.auth != null && request.auth.uid == userId;
+      
+      /**
+       * @description: Controls access to deployed sites for a specific user.
+       * @path: /users/{userId}/deployedSites/{siteId}
+       */
+      match /deployedSites/{siteId} {
+        allow get, list: if isOwner();
+        allow create: if isOwner() && request.resource.data.userId == userId;
+        allow delete: if isOwner();
+        allow update: if false; // Deployed links are immutable
       }
-      allow get, list: if isOwner();
-
-      allow create: if isOwner() && request.resource.data.userId == userId;
-      allow delete: if isOwner();
-      allow update: if false; // Deployed links are immutable
     }
   }
 }

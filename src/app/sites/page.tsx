@@ -33,10 +33,9 @@ export default function MySitesPage() {
     snapshotListenOptions: { includeMetadataChanges: true },
   });
 
-  const handleDelete = (siteProjectName: string) => {
+  const handleDelete = (siteId: string) => {
     if (!user || !firestore) return;
-    // The document ID is the projectName
-    const docRef = doc(firestore, `users/${user.uid}/deployedSites`, siteProjectName);
+    const docRef = doc(firestore, `users/${user.uid}/deployedSites`, siteId);
     deleteDocumentNonBlocking(docRef);
   };
 
@@ -102,7 +101,7 @@ export default function MySitesPage() {
                       <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => handleDelete(site.projectName)}
+                        onClick={() => handleDelete(site.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Delete</span>
