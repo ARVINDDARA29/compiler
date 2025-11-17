@@ -15,10 +15,7 @@ interface DeployedSite {
   id: string;
   projectName: string;
   url: string;
-  deployedAt: {
-    seconds: number;
-    nanoseconds: number;
-  };
+  deployedAt: Date; // Changed from { seconds: number; nanoseconds: number; } to Date
 }
 
 export default function MySitesPage() {
@@ -83,7 +80,7 @@ export default function MySitesPage() {
                         {site.url}
                       </a>
                       <span className="text-xs text-muted-foreground mt-1">
-                        Deployed on: {new Date(site.deployedAt.seconds * 1000).toLocaleString()}
+                        Deployed on: {site.deployedAt instanceof Date ? site.deployedAt.toLocaleString() : new Date((site.deployedAt as any).seconds * 1000).toLocaleString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
