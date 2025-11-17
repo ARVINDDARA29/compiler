@@ -29,10 +29,8 @@ export async function generateCode(input: GenerateCodeInput): Promise<GenerateCo
   return generateCodeFlow(input);
 }
 
-
 const prompt = ai.definePrompt({
     name: 'generateCodePrompt',
-    // Specify the model directly here.
     model: 'gpt-3.5-turbo',
     input: { schema: GenerateCodeInputSchema },
     output: { schema: GenerateCodeOutputSchema },
