@@ -22,7 +22,7 @@ type DeployResult = {
 };
 
 async function getGitHubToken(): Promise<string> {
-    const token = "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";
+    const token = process.env.GITHUB_TOKEN!;
     if (!token) {
         throw new Error('GitHub API token not found. Please add it to your .env file as GITHUB_TOKEN.');
     }
