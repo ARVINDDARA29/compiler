@@ -24,9 +24,6 @@ export default function MySitesPage() {
 
   const sitesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // The orderBy clause was removed. Firestore requires a composite index 
-    // for queries that filter on one field and order by another. 
-    // This was causing the query to fail silently.
     return query(
       collection(firestore, 'sites'),
       where('userId', '==', user.uid)
@@ -38,7 +35,6 @@ export default function MySitesPage() {
   const handleDelete = async (siteId: string, projectName: string) => {
     if (!firestore) return;
     
-    // The document ID is the projectName as defined in page.tsx
     const docRef = doc(firestore, 'sites', siteId);
     
     try {

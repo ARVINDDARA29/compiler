@@ -2,7 +2,7 @@
 'use client';
 
 import type { FC } from 'react';
-import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut } from 'lucide-react';
+import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser, useAuth } from '@/firebase';
@@ -77,6 +77,13 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileVie
                   </p>
                 </div>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+               <DropdownMenuItem asChild>
+                <Link href="/sites">
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  <span>My Sites</span>
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
