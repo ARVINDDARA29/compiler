@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Expand, Star, MessageSquarePlus } from 'lucide-react';
+import { Copy, Check, Expand, Star, MessageSquarePlus, Sparkles } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -27,6 +27,7 @@ import { useUser, useFirebase } from '@/firebase';
 import { AuthDialog } from '@/components/app/auth-dialog';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
+import { generateCode } from '@/ai/flows/generate-code-flow';
 
 const initialHtml = `<header class="hero">
   <h1>My Awesome Product</h1>
@@ -136,6 +137,10 @@ export default function Home() {
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState('');
   const [lastDeployedProject, setLastDeployedProject] = useState('');
+  
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
 
 
   const { toast } = useToast();
@@ -163,7 +168,7 @@ export default function Home() {
   useEffect(() => {
     runCode();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on initial load
+  }, [htmlCode, cssCode, jsCode]); 
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isMobile) return;
@@ -358,6 +363,39 @@ export default function Home() {
         setLastDeployedProject('');
     }
   };
+
+  const handleGenerateCode = async () => {
+    if (!aiPrompt) {
+        toast({
+            variant: 'destructive',
+            title: 'Prompt is empty',
+            description: 'Please describe what you want to build.',
+        });
+        return;
+    }
+    setIsGeneratingCode(true);
+    try {
+        const result = await generateCode({ prompt: aiPrompt });
+        setHtmlCode(result.html);
+        setCssCode(result.css);
+        setJsCode(result.js);
+        toast({
+            title: 'Code Generated!',
+            description: 'The AI assistant has updated your code.',
+        });
+        setIsAiDialogOpen(false);
+        setAiPrompt('');
+    } catch (error) {
+        console.error('AI code generation failed:', error);
+        toast({
+            variant: 'destructive',
+            title: 'AI Assistant Error',
+            description: error instanceof Error ? error.message : 'Could not generate code.',
+        });
+    } finally {
+        setIsGeneratingCode(false);
+    }
+  };
   
   return (
     <div className="flex h-screen w-screen flex-col bg-background">
@@ -387,6 +425,7 @@ export default function Home() {
               setCssCode={setCssCode}
               jsCode={jsCode}
               setJsCode={setJsCode}
+              onOpenAiDialog={() => setIsAiDialogOpen(true)}
             />
           </div>
 
@@ -521,6 +560,31 @@ export default function Home() {
               Submit Feedback
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
+            <DialogHeader>
+                <DialogTitle>AI Code Assistant</DialogTitle>
+                <DialogDescription>
+                    Describe the component, feature, or page you want to build. The AI will generate the HTML, CSS, and JavaScript for you.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <Textarea
+                    id="ai-prompt"
+                    placeholder="e.g., 'A responsive photo gallery with a title and four images' or 'A login form with email and password fields and a submit button.'"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    className="min-h-[120px]"
+                />
+            </div>
+            <DialogFooter>
+                <Button type="button" onClick={handleGenerateCode} disabled={isGeneratingCode || !aiPrompt}>
+                    {isGeneratingCode ? 'Generating...' : 'Generate Code'}
+                </Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
