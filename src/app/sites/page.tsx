@@ -1,4 +1,4 @@
-'use-client';
+'use client';
 
 import { useAuth, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';

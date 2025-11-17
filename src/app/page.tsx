@@ -155,9 +155,12 @@ export default function Home() {
   };
 
   useEffect(() => {
-    runCode();
+    const timeout = setTimeout(() => {
+      runCode();
+    }, 250);
+    return () => clearTimeout(timeout);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [htmlCode, cssCode, jsCode]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isMobile) return;
@@ -229,7 +232,7 @@ export default function Home() {
 
     toast({
       title: 'Deploying Project...',
-      description: 'Your site will be ready in about 30 seconds.',
+      description: "Your site will be ready in about 30 seconds. If it's not live after a minute, try refreshing the page.",
     });
 
     const deploymentPromise = deployToGithub({
@@ -309,59 +312,60 @@ export default function Home() {
         mobileView={mobileView}
         onSwitchToCode={() => setMobileView('editor')}
       />
-      <main
-        ref={containerRef}
-        className="flex flex-1 overflow-hidden md:flex-row flex-col"
-      >
-        <div
-          className={cn(
-            "flex flex-col h-full overflow-hidden",
-            isMobile ? (mobileView === 'editor' ? 'flex' : 'hidden') : 'flex'
-          )}
-          style={{ width: isMobile ? '100%' : `${sidebarWidth}%` }}
+      <div className="flex flex-col flex-1 h-full overflow-hidden">
+        <main
+          ref={containerRef}
+          className="flex flex-1 overflow-hidden md:flex-row flex-col"
         >
-          <CodeEditor
-            htmlCode={htmlCode}
-            setHtmlCode={setHtmlCode}
-            cssCode={cssCode}
-            setCssCode={setCssCode}
-            jsCode={jsCode}
-            setJsCode={setJsCode}
+          <div
+            className={cn(
+              "flex flex-col h-full overflow-hidden",
+              isMobile ? (mobileView === 'editor' ? 'flex' : 'hidden') : 'flex'
+            )}
+            style={{ width: isMobile ? '100%' : `${sidebarWidth}%` }}
+          >
+            <CodeEditor
+              htmlCode={htmlCode}
+              setHtmlCode={setHtmlCode}
+              cssCode={cssCode}
+              setCssCode={setCssCode}
+              jsCode={jsCode}
+              setJsCode={setJsCode}
+            />
+          </div>
+
+          <div
+            onMouseDown={handleMouseDown}
+            className="w-2 h-full cursor-col-resize bg-border hover:bg-primary/20 transition-colors hidden md:block"
           />
-        </div>
 
-        <div
-          onMouseDown={handleMouseDown}
-          className="w-2 h-full cursor-col-resize bg-border hover:bg-primary/20 transition-colors hidden md:block"
-        />
-
-        <div
-          className={cn(
-            "flex flex-col h-full overflow-hidden",
-            isMobile ? (mobileView === 'preview' ? 'flex' : 'hidden') : 'flex'
-          )}
-          style={{ width: isMobile ? '100%' : `${100 - sidebarWidth}%` }}
-        >
-          <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
-            <div className="flex items-center justify-between pr-2 bg-muted rounded-t-md">
-              <TabsList className="grid w-full grid-cols-1 bg-muted">
-                <TabsTrigger value="preview">Preview</TabsTrigger>
-              </TabsList>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullScreenPreviewOpen(true)}>
-                <Expand className="h-4 w-4" />
-                <span className="sr-only">Fullscreen Preview</span>
-              </Button>
+          <div
+            className={cn(
+              "flex flex-col h-full overflow-hidden",
+              isMobile ? (mobileView === 'preview' ? 'flex' : 'hidden') : 'flex'
+            )}
+            style={{ width: isMobile ? '100%' : `${100 - sidebarWidth}%` }}
+          >
+            <div className="flex-1 overflow-hidden">
+              <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+                <div className="flex items-center justify-between pr-2 bg-muted rounded-t-md">
+                  <TabsList className="grid w-full grid-cols-1 bg-muted">
+                    <TabsTrigger value="preview">Preview</TabsTrigger>
+                  </TabsList>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullScreenPreviewOpen(true)}>
+                    <Expand className="h-4 w-4" />
+                    <span className="sr-only">Fullscreen Preview</span>
+                  </Button>
+                </div>
+                <TabsContent value="preview" className="flex-1 overflow-auto bg-white mt-0">
+                    <LivePreview srcDoc={srcDoc} />
+                </TabsContent>
+              </Tabs>
             </div>
-            <TabsContent value="preview" className="flex-1 overflow-auto bg-white mt-0">
-                <LivePreview srcDoc={srcDoc} />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
 
-      <footer className="shrink-0 border-t py-2 px-4 text-center text-xs text-muted-foreground">
-        Made by Arvind Bishnoi
-      </footer>
 
       <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} />
 
