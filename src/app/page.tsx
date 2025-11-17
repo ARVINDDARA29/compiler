@@ -25,8 +25,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { useUser, useFirebase } from '@/firebase';
 import { AuthDialog } from '@/components/app/auth-dialog';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 const initialHtml = `<header class="hero">
   <h1>My Awesome Product</h1>
@@ -229,7 +228,7 @@ export default function Home() {
 
     toast({
       title: 'Deploying Project...',
-      description: "Your site will be ready in about 30 seconds. If it's not live after a minute, try refreshing the page.",
+      description: "Your site will be ready in about 45 seconds. If it's not live after a minute, try refreshing the page.",
     });
 
     const deploymentPromise = deployToGithub({
@@ -241,15 +240,15 @@ export default function Home() {
     });
     
     // Use a timer to ensure the toast stays for a minimum duration, giving GitHub Pages time to build.
-    const timerPromise = new Promise(resolve => setTimeout(resolve, 30000));
+    const timerPromise = new Promise(resolve => setTimeout(resolve, 45000));
 
     try {
       const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
 
       if (deploymentResult.success && deploymentResult.url) {
         
-        const sitesCollectionRef = collection(firestore, `users/${user.uid}/deployedSites`);
-        addDocumentNonBlocking(sitesCollectionRef, {
+        const newSiteRef = doc(firestore, `users/${user.uid}/deployedSites`, projectName);
+        setDoc(newSiteRef, {
           userId: user.uid,
           projectName: projectName,
           url: deploymentResult.url,

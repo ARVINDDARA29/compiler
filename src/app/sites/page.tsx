@@ -1,13 +1,12 @@
 'use client';
 
 import { useAuth, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -15,7 +14,7 @@ interface DeployedSite {
   id: string;
   projectName: string;
   url: string;
-  deployedAt: Date; // Changed from { seconds: number; nanoseconds: number; } to Date
+  deployedAt: Date;
 }
 
 export default function MySitesPage() {
@@ -30,10 +29,12 @@ export default function MySitesPage() {
     );
   }, [firestore, user]);
 
-  const { data: sites, isLoading } = useCollection<DeployedSite>(sitesQuery);
+  const { data: sites, isLoading } = useCollection<DeployedSite>(sitesQuery, {
+    snapshotListenOptions: { includeMetadataChanges: true },
+  });
 
   const handleDelete = (siteId: string) => {
-    if (!user) return;
+    if (!user || !firestore) return;
     const docRef = doc(firestore, `users/${user.uid}/deployedSites`, siteId);
     deleteDocumentNonBlocking(docRef);
   };
