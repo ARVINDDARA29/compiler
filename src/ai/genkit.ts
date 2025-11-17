@@ -9,7 +9,6 @@ export const ai = genkit({
       baseUrl: 'https://api.chatanywhere.tech/v1',
     }),
   ],
-  // While we use the googleAI plugin for transport, we still specify the model name
-  // that the target endpoint (OpenAI-compatible) expects.
-  model: 'gpt-3.5-turbo',
+  // The model is now specified in the flow file that uses it.
+  // This allows different flows to use different models.
 });
