@@ -271,13 +271,13 @@ export default function Home() {
 
   return (
     <>
-      <div className="flex w-screen flex-col bg-background">
+      <div className="flex h-screen w-screen flex-col bg-background">
         <AppHeader 
           isDeploying={isDeploying} 
           onDeploy={() => setIsDeployDialogOpen(true)}
         />
-        <div className="flex-1 flex-col">
-          <main ref={containerRef} className="flex flex-col md:flex-row p-2 md:p-4 gap-4 h-[calc(100vh-80px)]">
+        <div className="flex-1 flex flex-col overflow-y-auto">
+          <main ref={containerRef} className="flex flex-col md:flex-row p-2 md:p-4 gap-4 flex-1">
               <div 
                   className="flex flex-col md:h-full overflow-hidden"
                   style={{ 
@@ -321,7 +321,7 @@ export default function Home() {
                   </Tabs>
               </div>
           </main>
-          <footer className="w-full bg-card border-t mt-4 p-8">
+          <footer className="w-full bg-card border-t p-8">
             <div className="container mx-auto text-center">
               <h2 className="text-2xl font-bold text-primary mb-4">About CodeDeploy</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -383,11 +383,11 @@ export default function Home() {
       </Dialog>
       <Dialog open={isFullScreenPreviewOpen} onOpenChange={setIsFullScreenPreviewOpen}>
         <DialogContent className="w-screen h-screen max-w-full max-h-full p-0 m-0">
-          <DialogHeader>
-             <DialogTitle className="sr-only">Full Screen Preview</DialogTitle>
-             <DialogDescription className="sr-only">A full screen preview of your code.</DialogDescription>
+          <DialogHeader className="sr-only">
+             <DialogTitle>Full Screen Preview</DialogTitle>
+             <DialogDescription>A full screen preview of your code.</DialogDescription>
           </DialogHeader>
-          <LivePreview srcDoc={srcDoc} />
+          <LivePreview srcDoc={srcDoc} isFullScreen={true} />
         </DialogContent>
       </Dialog>
     </>
