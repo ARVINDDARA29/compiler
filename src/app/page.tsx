@@ -155,12 +155,9 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      runCode();
-    }, 250);
-    return () => clearTimeout(timeout);
+    runCode();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [htmlCode, cssCode, jsCode]);
+  }, []); // Run once on initial load
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isMobile) return;
@@ -217,7 +214,7 @@ export default function Home() {
       return;
     }
 
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Authentication Required',
@@ -242,7 +239,8 @@ export default function Home() {
       projectName,
       addWatermark,
     });
-
+    
+    // Use a timer to ensure the toast stays for a minimum duration, giving GitHub Pages time to build.
     const timerPromise = new Promise(resolve => setTimeout(resolve, 30000));
 
     try {
