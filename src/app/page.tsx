@@ -123,12 +123,27 @@ export default function Home() {
 
   const { toast } = useToast();
 
+  const runCode = () => {
+    setSrcDoc(`
+      <html>
+        <head>
+          <style>${cssCode}</style>
+        </head>
+        <body>
+          ${htmlCode}
+          <script>${jsCode}</script>
+        </body>
+      </html>
+    `);
+  };
+
   useEffect(() => {
     setIsClient(true);
+    runCode();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isClient || window.innerWidth < 768) return;
     e.preventDefault();
     setIsDragging(true);
   };
@@ -147,36 +162,14 @@ export default function Home() {
         }
       };
 
-      if (isClient) {
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
-      }
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
 
       return () => {
-        if (isClient) {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        }
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
       };
-  }, [isDragging, isClient]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setSrcDoc(`
-        <html>
-          <head>
-            <style>${cssCode}</style>
-          </head>
-          <body>
-            ${htmlCode}
-            <script>${jsCode}</script>
-          </body>
-        </html>
-      `);
-    }, 500);
-
-    return () => clearTimeout(timeout);
-  }, [htmlCode, cssCode, jsCode]);
+  }, [isDragging]);
 
   const handleDeploy = async () => {
     if (!projectName) {
@@ -255,76 +248,54 @@ export default function Home() {
     }
   };
   
-  const getSidebarWidth = () => {
-    if (!isClient || window.innerWidth < 768) {
-      return '100%';
-    }
-    return `${sidebarWidth}%`;
-  };
-
-  const getPreviewWidth = () => {
-      if (!isClient || window.innerWidth < 768) {
-        return '100%';
-      }
-      return `${100 - sidebarWidth}%`;
-  }
-
   return (
-    <>
-      <div className="flex w-screen flex-col bg-background">
-        <AppHeader 
-          isDeploying={isDeploying} 
-          onDeploy={() => setIsDeployDialogOpen(true)}
-        />
-        <main 
-          ref={containerRef} 
-          className="flex flex-col md:flex-row p-2 md:p-4 gap-4"
-          style={{ height: 'calc(100vh - 4rem)' }}
+    <div className="flex h-screen w-screen flex-col bg-background">
+      <AppHeader
+        isDeploying={isDeploying}
+        onDeploy={() => setIsDeployDialogOpen(true)}
+        onRun={runCode}
+      />
+      <main
+        ref={containerRef}
+        className="flex flex-1 overflow-hidden"
+      >
+        <div
+          className="flex flex-col h-full overflow-hidden"
+          style={{ width: `${sidebarWidth}%` }}
         >
-          <div 
-              className="flex flex-col md:h-full overflow-hidden"
-              style={{ 
-                width: getSidebarWidth(),
-                height: isClient && window.innerWidth < 768 ? '50%' : '100%',
-              }}
-          >
-              <CodeEditor
-                  htmlCode={htmlCode}
-                  setHtmlCode={setHtmlCode}
-                  cssCode={cssCode}
-                  setCssCode={setCssCode}
-                  jsCode={jsCode}
-                  setJsCode={setJsCode}
-              />
-          </div>
-          <div
-              onMouseDown={handleMouseDown}
-              className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors rounded-full"
+          <CodeEditor
+            htmlCode={htmlCode}
+            setHtmlCode={setHtmlCode}
+            cssCode={cssCode}
+            setCssCode={setCssCode}
+            jsCode={jsCode}
+            setJsCode={setJsCode}
           />
-          <div 
-              className="flex flex-col md:h-full overflow-hidden"
-              style={{ 
-                  width: getPreviewWidth(),
-                  height: isClient && window.innerWidth < 768 ? '50%' : '100%',
-              }}
-          >
-            <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
-              <div className="flex items-center justify-between pr-2 bg-muted rounded-t-md">
-                <TabsList className="grid w-full grid-cols-1 bg-muted">
-                  <TabsTrigger value="preview">Preview</TabsTrigger>
-                </TabsList>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullScreenPreviewOpen(true)}>
-                  <Expand className="h-4 w-4" />
-                  <span className="sr-only">Fullscreen Preview</span>
-                </Button>
-              </div>
-              <TabsContent value="preview" className="flex-1 overflow-auto bg-white mt-0">
-                  <LivePreview srcDoc={srcDoc} />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </main>
-      </div>
+        </div>
+        <div
+          onMouseDown={handleMouseDown}
+          className="w-2 h-full cursor-col-resize bg-border hover:bg-primary/20 transition-colors"
+        />
+        <div
+          className="flex flex-col h-full overflow-hidden"
+          style={{ width: `${100 - sidebarWidth}%` }}
+        >
+          <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+            <div className="flex items-center justify-between pr-2 bg-muted rounded-t-md">
+              <TabsList className="grid w-full grid-cols-1 bg-muted">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+              </TabsList>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullScreenPreviewOpen(true)}>
+                <Expand className="h-4 w-4" />
+                <span className="sr-only">Fullscreen Preview</span>
+              </Button>
+            </div>
+            <TabsContent value="preview" className="flex-1 overflow-auto bg-white mt-0">
+                <LivePreview srcDoc={srcDoc} />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
       <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -378,6 +349,6 @@ export default function Home() {
           <LivePreview srcDoc={srcDoc} isFullScreen={true} />
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
