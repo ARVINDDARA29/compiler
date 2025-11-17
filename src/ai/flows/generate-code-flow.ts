@@ -11,6 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
+
 const GenerateCodeInputSchema = z.object({
   prompt: z.string().describe('The user\'s description of the code to generate.'),
 });
@@ -31,6 +32,9 @@ export async function generateCode(input: GenerateCodeInput): Promise<GenerateCo
 
 const prompt = ai.definePrompt({
     name: 'generateCodePrompt',
+    // The model is now specified in the central genkit.ts file
+    // We can override it here if needed, but it's good practice to keep it central.
+    // model: 'gpt-3.5-turbo', 
     input: { schema: GenerateCodeInputSchema },
     output: { schema: GenerateCodeOutputSchema },
     prompt: `You are an expert web developer. Your task is to generate HTML, CSS, and JavaScript code based on a user's prompt.
