@@ -271,74 +271,73 @@ export default function Home() {
 
   return (
     <>
-      <div className="flex h-screen w-screen flex-col bg-background">
+      <div className="flex w-screen flex-col bg-background">
         <AppHeader 
           isDeploying={isDeploying} 
           onDeploy={() => setIsDeployDialogOpen(true)}
         />
-        <div className="flex-1 flex flex-col">
-          <main 
-            ref={containerRef} 
-            className="flex flex-col md:flex-row p-2 md:p-4 gap-4 flex-1"
+        <main 
+          ref={containerRef} 
+          className="flex flex-col md:flex-row p-2 md:p-4 gap-4"
+          style={{ height: 'calc(100vh - 4rem)' }}
+        >
+          <div 
+              className="flex flex-col md:h-full overflow-hidden"
+              style={{ 
+                width: getSidebarWidth(),
+                height: isClient && window.innerWidth < 768 ? '50%' : '100%',
+              }}
           >
-              <div 
-                  className="flex flex-col md:h-full overflow-hidden"
-                  style={{ 
-                    width: getSidebarWidth(),
-                    height: isClient && window.innerWidth < 768 ? '50%' : '100%',
-                  }}
-              >
-                  <CodeEditor
-                      htmlCode={htmlCode}
-                      setHtmlCode={setHtmlCode}
-                      cssCode={cssCode}
-                      setCssCode={setCssCode}
-                      jsCode={jsCode}
-                      setJsCode={setJsCode}
-                  />
-              </div>
-              <div
-                  onMouseDown={handleMouseDown}
-                  className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors rounded-full"
+              <CodeEditor
+                  htmlCode={htmlCode}
+                  setHtmlCode={setHtmlCode}
+                  cssCode={cssCode}
+                  setCssCode={setCssCode}
+                  jsCode={jsCode}
+                  setJsCode={setJsCode}
               />
-              <div 
-                  className="flex flex-col md:h-full overflow-hidden"
-                  style={{ 
-                      width: getPreviewWidth(),
-                      height: isClient && window.innerWidth < 768 ? '50%' : '100%',
-                  }}
-              >
-                  <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
-                      <div className="flex items-center justify-between pr-2 bg-muted rounded-t-md">
-                          <TabsList className="grid w-full grid-cols-1 bg-muted">
-                              <TabsTrigger value="preview">Preview</TabsTrigger>
-                          </TabsList>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullScreenPreviewOpen(true)}>
-                              <Expand className="h-4 w-4" />
-                              <span className="sr-only">Fullscreen Preview</span>
-                          </Button>
-                      </div>
-                      <TabsContent value="preview" className="flex-1 overflow-auto bg-white mt-0">
-                          <LivePreview srcDoc={srcDoc} />
-                      </TabsContent>
-                  </Tabs>
+          </div>
+          <div
+              onMouseDown={handleMouseDown}
+              className="w-full md:w-2 h-2 md:h-auto cursor-row-resize md:cursor-col-resize bg-border hover:bg-primary/20 transition-colors rounded-full"
+          />
+          <div 
+              className="flex flex-col md:h-full overflow-hidden"
+              style={{ 
+                  width: getPreviewWidth(),
+                  height: isClient && window.innerWidth < 768 ? '50%' : '100%',
+              }}
+          >
+            <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+              <div className="flex items-center justify-between pr-2 bg-muted rounded-t-md">
+                <TabsList className="grid w-full grid-cols-1 bg-muted">
+                  <TabsTrigger value="preview">Preview</TabsTrigger>
+                </TabsList>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullScreenPreviewOpen(true)}>
+                  <Expand className="h-4 w-4" />
+                  <span className="sr-only">Fullscreen Preview</span>
+                </Button>
               </div>
-          </main>
-          <footer className="w-full bg-card border-t p-8">
-            <div className="container mx-auto text-center">
-              <h2 className="text-2xl font-bold text-primary mb-4">About CodeDeploy</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                CodeDeploy is a simple yet powerful online editor for HTML, CSS, and JavaScript. 
-                It provides a live preview of your code and allows for one-click deployment to GitHub Pages, 
-                making it incredibly easy to share your web creations with the world. 
-                This tool was built to empower developers and designers to quickly prototype and deploy static websites for free.
-              </p>
-              <p className="text-sm text-muted-foreground mt-8">
-                &copy; {new Date().getFullYear()} CodeDeploy. All rights reserved.
-              </p>
-            </div>
-          </footer>
-        </div>
+              <TabsContent value="preview" className="flex-1 overflow-auto bg-white mt-0">
+                  <LivePreview srcDoc={srcDoc} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </main>
+        <footer className="w-full bg-card border-t p-8">
+          <div className="container mx-auto text-center">
+            <h2 className="text-2xl font-bold text-primary mb-4">About CodeDeploy</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              CodeDeploy is a simple yet powerful online editor for HTML, CSS, and JavaScript. 
+              It provides a live preview of your code and allows for one-click deployment to GitHub Pages, 
+              making it incredibly easy to share your web creations with the world. 
+              This tool was built to empower developers and designers to quickly prototype and deploy static websites for free.
+            </p>
+            <p className="text-sm text-muted-foreground mt-8">
+              &copy; {new Date().getFullYear()} CodeDeploy. All rights reserved.
+            </p>
+          </div>
+        </footer>
       </div>
       <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
