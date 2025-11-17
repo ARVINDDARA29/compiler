@@ -324,20 +324,6 @@ export default function Home() {
             </Tabs>
           </div>
         </main>
-        <footer className="w-full bg-card border-t p-8">
-          <div className="container mx-auto text-center">
-            <h2 className="text-2xl font-bold text-primary mb-4">About CodeDeploy</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              CodeDeploy is a simple yet powerful online editor for HTML, CSS, and JavaScript. 
-              It provides a live preview of your code and allows for one-click deployment to GitHub Pages, 
-              making it incredibly easy to share your web creations with the world. 
-              This tool was built to empower developers and designers to quickly prototype and deploy static websites for free.
-            </p>
-            <p className="text-sm text-muted-foreground mt-8">
-              &copy; {new Date().getFullYear()} CodeDeploy. All rights reserved.
-            </p>
-          </div>
-        </footer>
       </div>
       <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
