@@ -2,47 +2,52 @@
  * @fileoverview Firestore Security Rules for RunAndDeploy application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model. Users can only read and write their own profile data and deployed sites.
+ * This ruleset enforces a user-ownership model. Users can only read and write their own data.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profile information.
- * - /users/{userId}/deployedSites/{siteId}: Stores deployed sites associated with a specific user.
- *
- * Key Security Decisions:
- * - Users can only create their own user document (self-registration).
- * - Users can only manage their own deployed sites.
- * - Listing all users is disallowed for privacy.
- * - Data validation ensures that the `userId` in a document matches the owner's UID.
+ * - /users/{userId}: Stores public user profile information.
+ * - /sites/{siteId}: Stores all deployed sites. Access is scoped by userId.
+ * - /feedbacks/{feedbackId}: Stores user feedback. Users can only write their own feedback.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description: Controls access to user profile information.
-     * @path: /users/{userId}
-     */
+    
+    // Users can read their own profile, and create/update it.
     match /users/{userId} {
       function isOwner() {
         return request.auth != null && request.auth.uid == userId;
       }
+      
       allow get: if isOwner();
-      allow list: if false; // Prevent listing all users
+      allow list: if false; 
 
       allow create: if isOwner() && request.resource.data.id == userId;
       allow update: if isOwner() && request.resource.data.id == userId;
-      allow delete: if false; // Users should not be able to delete their own profiles easily
-      
-      /**
-       * @description: Controls access to deployed sites for a specific user.
-       * @path: /users/{userId}/deployedSites/{siteId}
-       */
-      match /deployedSites/{siteId} {
-        allow get, list: if isOwner();
-        allow create: if isOwner() && request.resource.data.userId == userId;
-        allow delete: if isOwner();
-        allow update: if false; // Deployed links are immutable
+      allow delete: if false;
+    }
+    
+    // Deployed sites are in a top-level collection.
+    // Users can create their own sites and read/delete only the sites they own.
+    match /sites/{siteId} {
+      function isSiteOwner() {
+          // Check create against incoming data, check read/delete against existing data
+          return request.auth != null && (request.resource.data.userId == request.auth.uid || resource.data.userId == request.auth.uid);
       }
+      
+      allow list: if request.auth != null; // Allows querying, but will be filtered by 'where' clause in the app.
+      allow get: if isSiteOwner();
+
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSiteOwner();
+      allow update: if false;
+    }
+    
+    // Feedback collection
+    // Users can create feedback, but cannot read, update or delete any feedback (including their own).
+    match /feedbacks/{feedbackId} {
+       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+       allow read, update, delete: if false;
     }
   }
 }

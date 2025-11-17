@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Expand } from 'lucide-react';
+import { Copy, Check, Expand, Star } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -25,7 +25,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { useUser, useFirebase } from '@/firebase';
 import { AuthDialog } from '@/components/app/auth-dialog';
-import { doc, setDoc } from 'firebase/firestore';
+import { collection, doc, setDoc } from 'firebase/firestore';
+import { Textarea } from '@/components/ui/textarea';
 
 const initialHtml = `<header class="hero">
   <h1>My Awesome Product</h1>
@@ -130,6 +131,12 @@ export default function Home() {
   const [mobileView, setMobileView] = useState<MobileView>('editor');
 
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [lastDeployedProject, setLastDeployedProject] = useState('');
+
 
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -239,7 +246,6 @@ export default function Home() {
       addWatermark,
     });
     
-    // Use a timer to ensure the toast stays for a minimum duration, giving GitHub Pages time to build.
     const timerPromise = new Promise(resolve => setTimeout(resolve, 45000));
 
     try {
@@ -247,14 +253,18 @@ export default function Home() {
 
       if (deploymentResult.success && deploymentResult.url) {
         
-        const newSiteRef = doc(firestore, `users/${user.uid}/deployedSites`, projectName);
-        setDoc(newSiteRef, {
+        const sitesCollectionRef = collection(firestore, 'sites');
+        const newSiteRef = doc(sitesCollectionRef, projectName);
+
+        await setDoc(newSiteRef, {
           userId: user.uid,
           projectName: projectName,
           url: deploymentResult.url,
           deployedAt: new Date(),
         });
         
+        setLastDeployedProject(projectName);
+
         toast({
           title: 'Deployment Successful!',
           description: 'Your link is permanent and free forever.',
@@ -283,6 +293,7 @@ export default function Home() {
             </div>
           ),
         });
+        setIsFeedbackDialogOpen(true);
       } else {
         throw new Error(deploymentResult.error || 'An unknown error occurred during deployment.');
       }
@@ -297,6 +308,47 @@ export default function Home() {
       setIsDeploying(false);
       setProjectName('');
       setAddWatermark(true);
+    }
+  };
+
+  const handleFeedbackSubmit = async () => {
+    if (feedbackRating === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Rating Required',
+        description: 'Please select a star rating.',
+      });
+      return;
+    }
+    
+    if (!user || !firestore) return;
+
+    try {
+        const feedbackCollectionRef = collection(firestore, 'feedbacks');
+        const newFeedbackRef = doc(feedbackCollectionRef);
+        await setDoc(newFeedbackRef, {
+            userId: user.uid,
+            projectName: lastDeployedProject,
+            rating: feedbackRating,
+            comment: feedbackComment,
+            submittedAt: new Date(),
+        });
+
+        toast({
+            title: 'Feedback Submitted!',
+            description: 'Thank you for your feedback.',
+        });
+    } catch (error) {
+         toast({
+            variant: 'destructive',
+            title: 'Feedback Failed',
+            description: 'Could not submit your feedback. Please try again.',
+        });
+    } finally {
+        setIsFeedbackDialogOpen(false);
+        setFeedbackRating(0);
+        setFeedbackComment('');
+        setLastDeployedProject('');
     }
   };
   
@@ -418,6 +470,50 @@ export default function Home() {
              <DialogDescription>A full screen preview of your code.</DialogDescription>
           </DialogHeader>
           <LivePreview srcDoc={srcDoc} isFullScreen={true} />
+        </DialogContent>
+      </Dialog>
+      
+       <Dialog open={isFeedbackDialogOpen} onOpenChange={setIsFeedbackDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Provide Feedback</DialogTitle>
+            <DialogDescription>
+              Thank you for using RunAndDeploy! How was your experience?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-4">
+            <div className="flex justify-center items-center gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={cn(
+                    'h-8 w-8 cursor-pointer transition-colors',
+                    feedbackRating >= star
+                      ? 'text-yellow-400 fill-yellow-400'
+                      : 'text-gray-300'
+                  )}
+                  onClick={() => setFeedbackRating(star)}
+                />
+              ))}
+            </div>
+             <div className="grid w-full gap-1.5">
+              <Label htmlFor="feedback-comment">Comments (optional)</Label>
+              <Textarea
+                id="feedback-comment"
+                placeholder="Tell us what you think..."
+                value={feedbackComment}
+                onChange={(e) => setFeedbackComment(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+             <Button type="button" variant="outline" onClick={() => setIsFeedbackDialogOpen(false)}>
+              Skip
+            </Button>
+            <Button type="button" onClick={handleFeedbackSubmit}>
+              Submit Feedback
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, doc, Timestamp, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react';
@@ -24,7 +24,8 @@ export default function MySitesPage() {
   const sitesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
-      collection(firestore, `users/${user.uid}/deployedSites`),
+      collection(firestore, 'sites'),
+      where('userId', '==', user.uid),
       orderBy('deployedAt', 'desc')
     );
   }, [firestore, user]);
@@ -35,7 +36,7 @@ export default function MySitesPage() {
 
   const handleDelete = (siteId: string) => {
     if (!user || !firestore) return;
-    const docRef = doc(firestore, `users/${user.uid}/deployedSites`, siteId);
+    const docRef = doc(firestore, `sites`, siteId);
     deleteDocumentNonBlocking(docRef);
   };
 

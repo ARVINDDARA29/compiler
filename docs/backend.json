@@ -50,9 +50,9 @@
           "format": "uri"
         },
         "deployedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The timestamp when the site was deployed."
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the site was deployed."
         }
       },
       "required": [
@@ -60,6 +60,43 @@
         "projectName",
         "url",
         "deployedAt"
+      ]
+    },
+    "Feedback": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Feedback",
+      "type": "object",
+      "description": "Represents user feedback for a deployed site.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user providing the feedback."
+        },
+        "projectName": {
+          "type": "string",
+          "description": "The name of the project the feedback is for."
+        },
+        "rating": {
+          "type": "number",
+          "description": "A star rating from 1 to 5.",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "comment": {
+          "type": "string",
+          "description": "An optional text comment from the user."
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the feedback was submitted."
+        }
+      },
+      "required": [
+        "userId",
+        "projectName",
+        "rating",
+        "submittedAt"
       ]
     }
   },
@@ -77,33 +114,27 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information. Uses path-based ownership for private data. Includes userId parameter for identifying the user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
+          "description": "Stores user profile information."
         }
       },
       {
-        "path": "/users/{userId}/deployedSites/{siteId}",
+        "path": "/sites/{siteId}",
         "definition": {
           "entityName": "DeployedSite",
           "schema": {
             "$ref": "#/backend/entities/DeployedSite"
           },
-          "description": "Stores deployed site links associated with a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "siteId",
-              "description": "The unique identifier for the deployed site link."
-            }
-          ]
+          "description": "Stores all deployed site links. Access is controlled by userId."
+        }
+      },
+      {
+        "path": "/feedbacks/{feedbackId}",
+        "definition": {
+          "entityName": "Feedback",
+          "schema": {
+            "$ref": "#/backend/entities/Feedback"
+          },
+          "description": "Stores user feedback for deployments."
         }
       }
     ]
