@@ -187,26 +187,26 @@ export default function Home() {
       });
       return;
     }
-  
+
     setIsDeploying(true);
     setIsDeployDialogOpen(false);
-  
+
     toast({
       title: 'Deploying Project...',
       description: 'Your site will be ready in about 30 seconds.',
     });
-  
-    try {
-      const deploymentPromise = deployToGithub({
-        html: htmlCode,
-        css: cssCode,
-        js: jsCode,
-        projectName,
-        addWatermark,
-      });
 
-      const timerPromise = new Promise(resolve => setTimeout(resolve, 30000));
-      
+    const deploymentPromise = deployToGithub({
+      html: htmlCode,
+      css: cssCode,
+      js: jsCode,
+      projectName,
+      addWatermark,
+    });
+
+    const timerPromise = new Promise(resolve => setTimeout(resolve, 30000));
+
+    try {
       const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
 
       if (deploymentResult.success && deploymentResult.url) {
