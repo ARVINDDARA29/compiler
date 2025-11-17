@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { collection, query, orderBy, where, doc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, doc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react';
@@ -9,12 +9,11 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
-// This interface defines the structure of the site data we expect from Firestore.
 interface DeployedSite {
-  id: string; // The useCollection hook automatically adds the document ID here.
+  id: string; 
   projectName: string;
   url: string;
-  deployedAt: Timestamp; // Data from Firestore will be a Timestamp object.
+  deployedAt: Timestamp;
   userId: string;
 }
 
@@ -23,26 +22,23 @@ export default function MySitesPage() {
   const { firestore } = useFirestore();
   const { toast } = useToast();
 
-  // We use useMemoFirebase to create a stable query object.
-  // This query fetches documents from the 'sites' collection...
-  // ...where the 'userId' matches the logged-in user's ID...
-  // ...and orders them by deployment date, newest first.
   const sitesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    // The orderBy clause was removed. Firestore requires a composite index 
+    // for queries that filter on one field and order by another. 
+    // This was causing the query to fail silently.
     return query(
       collection(firestore, 'sites'),
-      where('userId', '==', user.uid),
-      orderBy('deployedAt', 'desc')
+      where('userId', '==', user.uid)
     );
   }, [firestore, user]);
 
-  // The useCollection hook subscribes to the query in real-time.
   const { data: sites, isLoading, error } = useCollection<DeployedSite>(sitesQuery);
 
-  // This function handles deleting a site.
   const handleDelete = async (siteId: string, projectName: string) => {
     if (!firestore) return;
     
+    // The document ID is the projectName as defined in page.tsx
     const docRef = doc(firestore, 'sites', siteId);
     
     try {
@@ -61,14 +57,11 @@ export default function MySitesPage() {
     }
   };
 
-  // This function safely formats the date from a Firestore Timestamp.
   const formatDate = (timestamp: Timestamp | null | undefined) => {
     if (!timestamp) return 'Date not available';
-    // The .toDate() method converts the Firestore Timestamp to a standard JS Date.
     return timestamp.toDate().toLocaleString();
   };
   
-  // If there's an error fetching data, we display it.
   if (error) {
     return (
         <div className="flex items-center justify-center h-screen">
