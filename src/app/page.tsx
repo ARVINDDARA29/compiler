@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Expand, Star } from 'lucide-react';
+import { Copy, Check, Expand, Star, MessageSquarePlus } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -271,6 +271,14 @@ export default function Home() {
           duration: 9000,
           action: (
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFeedbackDialogOpen(true)}
+              >
+                <MessageSquarePlus className="mr-2 h-4 w-4" />
+                Feedback
+              </Button>
               <a href={deploymentResult.url} target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm">
                   View Site
@@ -293,7 +301,6 @@ export default function Home() {
             </div>
           ),
         });
-        setIsFeedbackDialogOpen(true);
       } else {
         throw new Error(deploymentResult.error || 'An unknown error occurred during deployment.');
       }
