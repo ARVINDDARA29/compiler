@@ -21,8 +21,7 @@ import {
   AuthError,
   User,
 } from 'firebase/auth';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { doc } from 'firebase/firestore';
+import { setDoc, doc } from 'firebase/firestore';
 
 interface AuthDialogProps {
   open: boolean;
@@ -42,16 +41,22 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
   const { firestore } = useFirebase();
 
   const handleAuthSuccess = async (user: User, isNewUser = false) => {
-    if (isNewUser) {
+    if (isNewUser && firestore) {
       // Update profile and create user document
-      await updateProfile(user, { displayName: name });
-      const userDocRef = doc(firestore, 'users', user.uid);
-      setDocumentNonBlocking(userDocRef, {
-        name: name,
-        email: user.email,
-        id: user.uid,
-      }, { merge: true });
-      toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
+      try {
+        await updateProfile(user, { displayName: name });
+        const userDocRef = doc(firestore, 'users', user.uid);
+        // Use standard setDoc for reliability
+        await setDoc(userDocRef, {
+          name: name,
+          email: user.email,
+          id: user.uid,
+        }, { merge: true });
+        toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
+      } catch (error) {
+        console.error("Failed to create user document:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not save user profile.' });
+      }
     } else {
       toast({ title: 'Login successful!', description: 'You can now deploy your project.' });
     }
@@ -59,6 +64,10 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
   };
 
   const handleAuthAction = async () => {
+    if (!auth) {
+        toast({variant: 'destructive', title: 'Auth service not available'});
+        return;
+    }
     setIsLoading(true);
     try {
       if (authMode === 'signup') {
