@@ -276,14 +276,6 @@ export default function Home() {
           duration: 9000,
           action: (
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsFeedbackDialogOpen(true)}
-              >
-                <MessageSquarePlus className="mr-2 h-4 w-4" />
-                Feedback
-              </Button>
               <a href={deploymentResult.url} target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm">
                   View Site
@@ -340,7 +332,7 @@ export default function Home() {
         const newFeedbackRef = doc(feedbackCollectionRef);
         await setDoc(newFeedbackRef, {
             userId: user.uid,
-            projectName: lastDeployedProject,
+            projectName: lastDeployedProject || 'general',
             rating: feedbackRating,
             comment: feedbackComment,
             submittedAt: new Date(),
@@ -364,37 +356,11 @@ export default function Home() {
     }
   };
 
-  const handleGenerateCode = async () => {
-    if (!aiPrompt) {
-        toast({
-            variant: 'destructive',
-            title: 'Prompt is empty',
-            description: 'Please describe what you want to build.',
-        });
-        return;
-    }
-    setIsGeneratingCode(true);
-    try {
-        const result = await generateCode({ prompt: aiPrompt });
-        setHtmlCode(result.html);
-        setCssCode(result.css);
-        setJsCode(result.js);
-        toast({
-            title: 'Code Generated!',
-            description: 'The AI assistant has updated your code.',
-        });
-        setIsAiDialogOpen(false);
-        setAiPrompt('');
-    } catch (error) {
-        console.error('AI code generation failed:', error);
-        toast({
-            variant: 'destructive',
-            title: 'AI Assistant Error',
-            description: error instanceof Error ? error.message : 'Could not generate code.',
-        });
-    } finally {
-        setIsGeneratingCode(false);
-    }
+  const handleAiButtonClick = () => {
+    toast({
+        title: 'AI Assistant',
+        description: 'Coming soon!',
+    });
   };
   
   return (
@@ -405,6 +371,7 @@ export default function Home() {
         onRun={runCode}
         mobileView={mobileView}
         onSwitchToCode={() => setMobileView('editor')}
+        onFeedbackClick={() => setIsFeedbackDialogOpen(true)}
       />
       <div className="flex flex-col flex-1 h-full overflow-hidden">
         <main
@@ -425,7 +392,7 @@ export default function Home() {
               setCssCode={setCssCode}
               jsCode={jsCode}
               setJsCode={setJsCode}
-              onOpenAiDialog={() => setIsAiDialogOpen(true)}
+              onOpenAiDialog={handleAiButtonClick}
             />
           </div>
 
@@ -563,30 +530,8 @@ export default function Home() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
-        <DialogContent className="sm:max-w-xl">
-            <DialogHeader>
-                <DialogTitle>AI Code Assistant</DialogTitle>
-                <DialogDescription>
-                    Describe the component, feature, or page you want to build. The AI will generate the HTML, CSS, and JavaScript for you.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <Textarea
-                    id="ai-prompt"
-                    placeholder="e.g., 'A responsive photo gallery with a title and four images' or 'A login form with email and password fields and a submit button.'"
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    className="min-h-[120px]"
-                />
-            </div>
-            <DialogFooter>
-                <Button type="button" onClick={handleGenerateCode} disabled={isGeneratingCode || !aiPrompt}>
-                    {isGeneratingCode ? 'Generating...' : 'Generate Code'}
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
+
+    

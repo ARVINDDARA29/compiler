@@ -2,13 +2,12 @@
 'use client';
 
 import type { FC } from 'react';
-import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, LayoutGrid } from 'lucide-react';
+import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import Link from 'next/link';
 
 interface AppHeaderProps {
   isDeploying: boolean;
@@ -16,9 +15,10 @@ interface AppHeaderProps {
   onRun: () => void;
   mobileView: 'editor' | 'preview';
   onSwitchToCode: () => void;
+  onFeedbackClick: () => void;
 }
 
-const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileView, onSwitchToCode }) => {
+const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileView, onSwitchToCode, onFeedbackClick }) => {
   const isMobile = useIsMobile();
   const { user } = useUser();
   const auth = useAuth();
@@ -78,13 +78,10 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileVie
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-               <DropdownMenuItem asChild>
-                <Link href="/sites">
-                  <LayoutGrid className="mr-2 h-4 w-4" />
-                  <span>My Sites</span>
-                </Link>
+               <DropdownMenuItem onClick={onFeedbackClick}>
+                <MessageSquarePlus className="mr-2 h-4 w-4" />
+                <span>Feedback</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
@@ -98,3 +95,5 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileVie
 };
 
 export default AppHeader;
+
+    
