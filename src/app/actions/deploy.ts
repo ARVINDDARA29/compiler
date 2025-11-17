@@ -42,7 +42,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
   
   let GITHUB_TOKEN = '';
   try {
-    GITHUB_TOKEN = await getGitHubToken();
+    GITHUB_TOKEN = process.env.GITHUB_TOKEN!;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not retrieve API token.';
     console.error(message);
