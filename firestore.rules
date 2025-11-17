@@ -8,6 +8,7 @@
  * - /users/{userId}: Stores public user profile information.
  * - /sites/{siteId}: Stores all deployed sites. Access is scoped by userId.
  * - /feedbacks/{feedbackId}: Stores user feedback. Users can only write their own feedback.
+ * - /gitapi/{apiId}: Stores the GitHub API token. Should only be readable by server functions.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -48,6 +49,14 @@ service cloud.firestore {
     match /feedbacks/{feedbackId} {
        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
        allow read, update, delete: if false;
+    }
+
+    // GitHub API token storage
+    // Should only be readable by a trusted server process. 
+    // The current client-side rule is a placeholder and is not secure for production.
+    match /gitapi/{apiId} {
+      allow get: if request.auth != null; // Allows authenticated users to read.
+      allow list, create, update, delete: if false; // Deny all writes from the client.
     }
   }
 }

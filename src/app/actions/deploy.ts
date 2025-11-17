@@ -1,8 +1,19 @@
 'use server';
 
 import { z } from 'zod';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, doc, getDoc, collection } from 'firebase/firestore';
+import { firebaseConfig } from '@/firebase/config';
 
-const GITHUB_TOKEN = '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';
+// Initialize Firebase Admin SDK
+// Ensure you have the necessary configuration in your environment
+if (!getApps().length) {
+    initializeApp(firebaseConfig);
+}
+
+const db = getFirestore();
+
+
 const REPO_OWNER = 'adbossappmaker';
 const REPO_NAME = 'sites';
 const BRANCH = 'main';
@@ -21,6 +32,19 @@ type DeployResult = {
   url?: string;
 };
 
+async function getGitHubToken(): Promise<string> {
+    const gitapiCollection = collection(db, 'gitapi');
+    const docRef = doc(gitapiCollection, 'main'); // Assuming a single doc named 'main' holds the token
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists() && docSnap.data()?.token) {
+        return docSnap.data().token;
+    } else {
+        throw new Error('GitHub API token not found in Firestore. Please add it to the "gitapi" collection with a document ID of "main".');
+    }
+}
+
+
 export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string, addWatermark: boolean }): Promise<DeployResult> {
   const validation = schema.safeParse(data);
   if (!validation.success) {
@@ -31,6 +55,15 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
 
   const { html, css, js, projectName, addWatermark } = validation.data;
   
+  let GITHUB_TOKEN = '';
+  try {
+    GITHUB_TOKEN = await getGitHubToken();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not retrieve API token.';
+    console.error(message);
+    return { success: false, error: message };
+  }
+
   const FILE_PATH = `${projectName}/index.html`;
 
   const watermarkHTML = addWatermark

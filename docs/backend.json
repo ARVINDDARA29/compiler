@@ -98,6 +98,19 @@
         "rating",
         "submittedAt"
       ]
+    },
+    "GitApi": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GitApi",
+      "type": "object",
+      "description": "Stores the GitHub API token.",
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "The GitHub Personal Access Token."
+        }
+      },
+      "required": ["token"]
     }
   },
   "auth": {
@@ -135,6 +148,16 @@
             "$ref": "#/backend/entities/Feedback"
           },
           "description": "Stores user feedback for deployments."
+        }
+      },
+      {
+        "path": "/gitapi/{apiId}",
+        "definition": {
+          "entityName": "GitApi",
+          "schema": {
+            "$ref": "#/backend/entities/GitApi"
+          },
+          "description": "Stores the GitHub API key. Should be read-only for server-side processes."
         }
       }
     ]
