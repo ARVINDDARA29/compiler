@@ -5,7 +5,7 @@ export const ai = genkit({
   plugins: [
     googleAI({
       apiKey: 'sk-I7liW57oWSJBRFaa1yLr0v9nYOh5PZJb9NAInR22LwbYhEon',
-      baseURL: 'https://api.chatanywhere.tech',
+      baseURL: 'https://api.chatanywhere.tech/v1',
     }),
   ],
 });
