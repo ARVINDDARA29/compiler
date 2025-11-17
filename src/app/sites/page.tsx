@@ -1,25 +1,26 @@
 'use client';
 
-import { useAuth, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, Timestamp, where } from 'firebase/firestore';
+import { useUser, useCollection, useMemoFirebase, useFirestore, useAuth } from '@/firebase';
+import { collection, query, orderBy, doc, Timestamp, where, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { useFirebase } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 interface DeployedSite {
   id: string; // The useCollection hook adds this 'id' property from the document ID
   projectName: string;
   url: string;
   deployedAt: Timestamp;
+  userId: string;
 }
 
 export default function MySitesPage() {
-  const { user } = useAuth();
-  const { firestore } = useFirebase();
+  const { user } = useUser();
+  const { firestore } = useFirestore();
+  const { toast } = useToast();
 
   const sitesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -34,17 +35,33 @@ export default function MySitesPage() {
     snapshotListenOptions: { includeMetadataChanges: true },
   });
 
-  const handleDelete = (siteId: string) => {
+  const handleDelete = async (siteId: string, projectName: string) => {
     if (!user || !firestore) return;
+    
     const docRef = doc(firestore, `sites`, siteId);
-    deleteDocumentNonBlocking(docRef);
+    
+    // We are not using non-blocking delete here to give immediate feedback.
+    try {
+        await deleteDoc(docRef);
+        toast({
+            title: "Site Deleted",
+            description: `${projectName} has been removed from your list.`
+        });
+    } catch(e) {
+        console.error("Error deleting document: ", e);
+        toast({
+            variant: "destructive",
+            title: "Deletion Failed",
+            description: "Could not delete the site. Please check permissions or try again."
+        });
+    }
   };
 
-  const formatDate = (timestamp: Timestamp) => {
-    if (timestamp && typeof timestamp.toDate === 'function') {
-      return timestamp.toDate().toLocaleString();
-    }
-    return 'Invalid date';
+  const formatDate = (timestamp: Timestamp | Date) => {
+    if (!timestamp) return 'Invalid date';
+    // The value can be a Firebase Timestamp or a JS Date object depending on the state
+    const date = (timestamp as Timestamp).toDate ? (timestamp as Timestamp).toDate() : (timestamp as Date);
+    return date.toLocaleString();
   };
 
   return (
@@ -102,7 +119,7 @@ export default function MySitesPage() {
                       <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => handleDelete(site.id)}
+                        onClick={() => handleDelete(site.id, site.projectName)}
                       >
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Delete</span>
