@@ -23,6 +23,10 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { useAuth, useFirebase } from '@/firebase';
+import { AuthDialog } from '@/components/app/auth-dialog';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection } from 'firebase/firestore';
 
 const initialHtml = `<header class="hero">
   <h1>My Awesome Product</h1>
@@ -126,8 +130,12 @@ export default function Home() {
 
   const [mobileView, setMobileView] = useState<MobileView>('editor');
 
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { firestore } = useFirebase();
 
   const runCode = () => {
     setSrcDoc(`
@@ -180,12 +188,37 @@ export default function Home() {
       };
   }, [isDragging, isMobile]);
 
+  const openDeployDialog = () => {
+    if (user) {
+      setIsDeployDialogOpen(true);
+    } else {
+      setIsAuthDialogOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    if(user && isAuthDialogOpen) {
+      setIsAuthDialogOpen(false);
+      setIsDeployDialogOpen(true);
+    }
+  }, [user, isAuthDialogOpen]);
+
+
   const handleDeploy = async () => {
     if (!projectName) {
       toast({
         variant: 'destructive',
         title: 'Project Name Required',
         description: 'Please enter a name for your project.',
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Required',
+        description: 'You must be logged in to deploy a project.',
       });
       return;
     }
@@ -212,6 +245,15 @@ export default function Home() {
       const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
 
       if (deploymentResult.success && deploymentResult.url) {
+        
+        const sitesCollectionRef = collection(firestore, `users/${user.uid}/deployedSites`);
+        addDocumentNonBlocking(sitesCollectionRef, {
+          userId: user.uid,
+          projectName: projectName,
+          url: deploymentResult.url,
+          deployedAt: new Date(),
+        });
+        
         toast({
           title: 'Deployment Successful!',
           description: 'Your link is permanent and free forever.',
@@ -261,7 +303,7 @@ export default function Home() {
     <div className="flex h-screen w-screen flex-col bg-background">
       <AppHeader
         isDeploying={isDeploying}
-        onDeploy={() => setIsDeployDialogOpen(true)}
+        onDeploy={openDeployDialog}
         onRun={runCode}
         mobileView={mobileView}
         onSwitchToCode={() => setMobileView('editor')}
@@ -316,6 +358,12 @@ export default function Home() {
         </div>
       </main>
 
+      <footer className="shrink-0 border-t py-2 px-4 text-center text-xs text-muted-foreground">
+        Made by Arvind Bishnoi
+      </footer>
+
+      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} />
+
       <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -348,7 +396,7 @@ export default function Home() {
                   onCheckedChange={setAddWatermark}
                 />
                 <Label htmlFor="watermark" className="text-sm font-normal text-muted-foreground">
-                  Add "Bishnoi deployer" watermark
+                  Add "RunAndDeploy" watermark
                 </Label>
               </div>
             </div>

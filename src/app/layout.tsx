@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'CodeDeploy',
+  title: 'RunAndDeploy',
   description: 'A simple HTML, CSS, and JavaScript editor with live preview and one-click deployment to GitHub Pages.',
 };
 

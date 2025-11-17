@@ -35,15 +35,15 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
 
   const watermarkHTML = addWatermark
     ? `
-    <a href="https://deploysite.netlify.app" target="_blank" class="bishnoi-deployer-watermark">
-      Bishnoi deployer
+    <a href="https://runanddeploy.netlify.app" target="_blank" class="runanddeploy-watermark">
+      RunAndDeploy
     </a>
   `
     : '';
 
   const watermarkCSS = addWatermark
     ? `
-    .bishnoi-deployer-watermark {
+    .runanddeploy-watermark {
       position: fixed;
       bottom: 10px;
       right: 10px;
@@ -56,7 +56,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
       z-index: 1000;
       transition: background-color 0.3s;
     }
-    .bishnoi-deployer-watermark:hover {
+    .runanddeploy-watermark:hover {
       background-color: rgba(0, 0, 0, 0.9);
     }
   `
@@ -101,14 +101,18 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     });
 
     if (getFileRes.ok) {
-      const fileData = await getFileRes.json();
-      existingFileSha = fileData.sha;
+        const fileData = await getFileRes.json();
+        // If we are here, the file exists, which means the name is already in use.
+        // GitHub's create/update API would normally just update it,
+        // but the user requirement is to show an error for uniqueness.
+        return { success: false, error: 'This name is already in use.' };
     } else if (getFileRes.status !== 404) {
+      // Handle other errors during the check
       const errorData = await getFileRes.json();
       throw new Error(`Failed to check for existing file: ${errorData.message || getFileRes.statusText}`);
     }
     
-    // 2. Create or update the file
+    // 2. Create the file (since it's a 404, we know it's a new file)
     const putFileRes = await fetch(apiUrl, {
       method: 'PUT',
       headers: {
@@ -117,9 +121,8 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
         'X-GitHub-Api-Version': '2022-11-28',
       },
       body: JSON.stringify({
-        message: `feat: Deploy site '${projectName}' via CodeDeploy [${new Date().toISOString()}]`,
+        message: `feat: Deploy site '${projectName}' via RunAndDeploy [${new Date().toISOString()}]`,
         content: contentEncoded,
-        sha: existingFileSha,
         branch: BRANCH,
       }),
     });

@@ -8,8 +8,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user.",
-          "format": "uuid"
+          "description": "Unique identifier for the user, matches Firebase Auth UID."
         },
         "email": {
           "type": "string",
@@ -27,47 +26,46 @@
         "name"
       ]
     },
-    "UploadedLink": {
+    "DeployedSite": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UploadedLink",
+      "title": "DeployedSite",
       "type": "object",
-      "description": "Represents a link to user's uploaded/deployed code.",
+      "description": "Represents a link to a user's deployed code.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the uploaded link.",
-          "format": "uuid"
+          "description": "Unique identifier for the deployed site document."
         },
         "userId": {
           "type": "string",
-          "description": "Reference to the User who created this link. (Relationship: User 1:N UploadedLink)"
+          "description": "Reference to the User who created this link."
         },
-        "linkName": {
+        "projectName": {
           "type": "string",
-          "description": "The name of the uploaded link, must be unique per user."
+          "description": "The name of the deployed project."
         },
         "url": {
           "type": "string",
           "description": "The URL where the code is deployed.",
           "format": "uri"
         },
-        "githubCommitSha": {
-          "type": "string",
-          "description": "The SHA of the commit in GitHub that represents this deployment."
+        "deployedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the site was deployed."
         }
       },
       "required": [
-        "id",
         "userId",
-        "linkName",
-        "url"
+        "projectName",
+        "url",
+        "deployedAt"
       ]
     }
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
@@ -89,26 +87,25 @@
         }
       },
       {
-        "path": "/users/{userId}/uploadedLinks/{uploadId}",
+        "path": "/users/{userId}/deployedSites/{siteId}",
         "definition": {
-          "entityName": "UploadedLink",
+          "entityName": "DeployedSite",
           "schema": {
-            "$ref": "#/backend/entities/UploadedLink"
+            "$ref": "#/backend/entities/DeployedSite"
           },
-          "description": "Stores uploaded links associated with a specific user. Uses path-based ownership (User 1:N UploadedLink). Includes userId and uploadId parameters for identifying the user and their uploaded link.",
+          "description": "Stores deployed site links associated with a specific user.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user."
             },
             {
-              "name": "uploadId",
-              "description": "The unique identifier for the uploaded link."
+              "name": "siteId",
+              "description": "The unique identifier for the deployed site link."
             }
           ]
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to support the RunAndDeploy application, focusing on user management and storing uploaded links. It prioritizes authorization independence to ensure secure and scalable operations. User data and uploaded links are stored in separate collections to maintain clarity and adhere to the principle of homogeneous security posture. Path-based ownership is used for `UploadedLink` entities to simplify security rules. A naming convention of userId and other names are used so the compiler understand what is the purpose of this collection"
+    ]
   }
 }
