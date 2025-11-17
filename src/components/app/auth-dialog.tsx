@@ -13,16 +13,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirebase } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
   AuthError,
+  User,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { doc } from 'firebase/firestore';
 
 interface AuthDialogProps {
   open: boolean;
@@ -41,6 +41,23 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
   const auth = useAuth();
   const { firestore } = useFirebase();
 
+  const handleAuthSuccess = async (user: User, isNewUser = false) => {
+    if (isNewUser) {
+      // Update profile and create user document
+      await updateProfile(user, { displayName: name });
+      const userDocRef = doc(firestore, 'users', user.uid);
+      setDocumentNonBlocking(userDocRef, {
+        name: name,
+        email: user.email,
+        id: user.uid,
+      }, { merge: true });
+      toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
+    } else {
+      toast({ title: 'Login successful!', description: 'You can now deploy your project.' });
+    }
+    onOpenChange(false);
+  };
+
   const handleAuthAction = async () => {
     setIsLoading(true);
     try {
@@ -51,29 +68,23 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
           return;
         }
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        await updateProfile(user, { displayName: name });
-        
-        const userDocRef = doc(firestore, 'users', user.uid);
-        setDocumentNonBlocking(userDocRef, {
-            name: name,
-            email: user.email,
-            id: user.uid,
-        }, { merge: true });
-
-        toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
+        await handleAuthSuccess(userCredential.user, true);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
-        toast({ title: 'Login successful!', description: 'You can now deploy your project.' });
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        await handleAuthSuccess(userCredential.user, false);
       }
-      onOpenChange(false);
     } catch (error) {
       const authError = error as AuthError;
       toast({
         variant: 'destructive',
         title: 'Authentication Failed',
-        description: authError.message,
+        description: authError.code === 'auth/email-already-in-use' 
+          ? 'This email is already in use. Please log in.'
+          : authError.message,
       });
+      if (authError.code === 'auth/email-already-in-use') {
+        setAuthMode('login');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -81,9 +92,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
 
   const toggleAuthMode = () => {
     setAuthMode(authMode === 'login' ? 'signup' : 'login');
-    setName('');
-    setEmail('');
-    setPassword('');
+    // Keep email and password fields for a smoother UX if they switch back and forth
   };
 
   return (
@@ -109,6 +118,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                 onChange={(e) => setName(e.target.value)}
                 className="col-span-3"
                 placeholder="Your Name"
+                autoComplete="name"
               />
             </div>
           )}
@@ -123,6 +133,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
               onChange={(e) => setEmail(e.target.value)}
               className="col-span-3"
               placeholder="you@example.com"
+              autoComplete="email"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -135,6 +146,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="col-span-3"
+              autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
             />
           </div>
         </div>

@@ -23,7 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { useAuth, useFirebase } from '@/firebase';
+import { useUser, useFirebase } from '@/firebase';
 import { AuthDialog } from '@/components/app/auth-dialog';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection } from 'firebase/firestore';
@@ -134,7 +134,7 @@ export default function Home() {
 
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { user } = useUser();
   const { firestore } = useFirebase();
 
   const runCode = () => {
@@ -220,6 +220,7 @@ export default function Home() {
         title: 'Authentication Required',
         description: 'You must be logged in to deploy a project.',
       });
+      openDeployDialog();
       return;
     }
 

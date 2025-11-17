@@ -5,7 +5,7 @@ import type { FC } from 'react';
 import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import Link from 'next/link';
@@ -20,7 +20,9 @@ interface AppHeaderProps {
 
 const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileView, onSwitchToCode }) => {
   const isMobile = useIsMobile();
-  const { user, auth } = useAuth();
+  const { user } = useUser();
+  const auth = useAuth();
+
 
   const handleLogout = () => {
     if (auth) {
@@ -62,7 +64,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileVie
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
-                  <AvatarFallback>{user.displayName?.[0] ?? <UserIcon className='h-4 w-4' />}</AvatarFallback>
+                  <AvatarFallback>{user.displayName?.[0]?.toUpperCase() ?? <UserIcon className='h-4 w-4' />}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
