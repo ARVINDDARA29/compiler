@@ -22,7 +22,7 @@ type DeployResult = {
 };
 
 async function getGitHubToken(): Promise<string> {
-    const token = process.env.GITHUB_TOKEN;
+    const token = "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";
     if (!token) {
         throw new Error('GitHub API token not found. Please add it to your .env file as GITHUB_TOKEN.');
     }
@@ -42,7 +42,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
   
   let GITHUB_TOKEN = '';
   try {
-    GITHUB_TOKEN = process.env.GITHUB_TOKEN!;
+    GITHUB_TOKEN = await getGitHubToken();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not retrieve API token.';
     console.error(message);
