@@ -11,10 +11,10 @@ import { useFirebase } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface DeployedSite {
-  id: string;
+  id: string; // The useCollection hook adds this 'id' property from the document ID
   projectName: string;
   url: string;
-  deployedAt: Timestamp; // Changed to Timestamp
+  deployedAt: Timestamp;
 }
 
 export default function MySitesPage() {
@@ -33,9 +33,10 @@ export default function MySitesPage() {
     snapshotListenOptions: { includeMetadataChanges: true },
   });
 
-  const handleDelete = (siteId: string) => {
+  const handleDelete = (siteProjectName: string) => {
     if (!user || !firestore) return;
-    const docRef = doc(firestore, `users/${user.uid}/deployedSites`, siteId);
+    // The document ID is the projectName
+    const docRef = doc(firestore, `users/${user.uid}/deployedSites`, siteProjectName);
     deleteDocumentNonBlocking(docRef);
   };
 
@@ -101,7 +102,7 @@ export default function MySitesPage() {
                       <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => handleDelete(site.id)}
+                        onClick={() => handleDelete(site.projectName)}
                       >
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Delete</span>
