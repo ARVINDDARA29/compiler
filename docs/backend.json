@@ -1,36 +1,114 @@
 {
   "entities": {
-    "deployedSite": {
-      "title": "Deployed Site",
-      "description": "Represents a site deployed by a user.",
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
       "type": "object",
+      "description": "Represents a user of the RunAndDeploy application.",
       "properties": {
-        "projectName": {
+        "id": {
           "type": "string",
-          "description": "The name of the project."
+          "description": "Unique identifier for the user.",
+          "format": "uuid"
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address for login and communication.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "User's display name."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name"
+      ]
+    },
+    "UploadedLink": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UploadedLink",
+      "type": "object",
+      "description": "Represents a link to user's uploaded/deployed code.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the uploaded link.",
+          "format": "uuid"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who created this link. (Relationship: User 1:N UploadedLink)"
+        },
+        "linkName": {
+          "type": "string",
+          "description": "The name of the uploaded link, must be unique per user."
         },
         "url": {
           "type": "string",
-          "description": "The URL of the deployed site."
+          "description": "The URL where the code is deployed.",
+          "format": "uri"
         },
-        "createdAt": {
+        "githubCommitSha": {
           "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the site was deployed."
+          "description": "The SHA of the commit in GitHub that represents this deployment."
         }
       },
-      "required": ["projectName", "url", "createdAt"]
+      "required": [
+        "id",
+        "userId",
+        "linkName",
+        "url"
+      ]
     }
   },
   "auth": {
-    "providers": []
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/deployedSites/{siteId}": {
-      "schema": {
-        "$ref": "#/entities/deployedSite"
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. Uses path-based ownership for private data. Includes userId parameter for identifying the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
       },
-      "description": "Collection of all publicly shared deployed sites."
-    }
+      {
+        "path": "/users/{userId}/uploadedLinks/{uploadId}",
+        "definition": {
+          "entityName": "UploadedLink",
+          "schema": {
+            "$ref": "#/backend/entities/UploadedLink"
+          },
+          "description": "Stores uploaded links associated with a specific user. Uses path-based ownership (User 1:N UploadedLink). Includes userId and uploadId parameters for identifying the user and their uploaded link.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "uploadId",
+              "description": "The unique identifier for the uploaded link."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support the RunAndDeploy application, focusing on user management and storing uploaded links. It prioritizes authorization independence to ensure secure and scalable operations. User data and uploaded links are stored in separate collections to maintain clarity and adhere to the principle of homogeneous security posture. Path-based ownership is used for `UploadedLink` entities to simplify security rules. A naming convention of userId and other names are used so the compiler understand what is the purpose of this collection"
   }
 }

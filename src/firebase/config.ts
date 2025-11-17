@@ -1,10 +1,8 @@
-// The Firebase config object is provided by the server
-// and should not be edited manually.
 export const firebaseConfig = {
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "REPLACE_WITH_YOUR_AUTH_DOMAIN",
-  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_YOUR_STORAGE_BUCKET",
-  messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
-  appId: "REPLACE_WITH_YOUR_APP_ID",
+  "projectId": "studio-2173818671-5b83c",
+  "appId": "1:20254295062:web:86e8b3f5803483f8f62137",
+  "apiKey": "AIzaSyDQGjhyKv1Ce_qYFYJ1E0xZcBQMRCfiK0Q",
+  "authDomain": "studio-2173818671-5b83c.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "20254295062"
 };

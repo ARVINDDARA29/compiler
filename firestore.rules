@@ -1,12 +1,72 @@
+/**
+ * @fileoverview Firestore Security Rules for RunAndDeploy application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model. Users can only read and write their own profile data and uploaded links.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile information.
+ * - /users/{userId}/uploadedLinks/{uploadId}: Stores uploaded links associated with a specific user.
+ *
+ * Key Security Decisions:
+ * - Users can only create their own user document (self-registration).
+ * - Users can only manage their own uploaded links.
+ * - Listing all users is disallowed for privacy.
+ * - Data validation is relaxed for rapid prototyping but MUST be tightened in production.
+ *
+ * Denormalization for Authorization:
+ *  - The `UploadedLink` documents MUST contain a `userId` field that matches the `userId` in the path.
+ *  - This is enforced during creation and update to maintain relational integrity.
+ */
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /deployedSites/{siteId} {
-      allow read;
-      allow create: if request.resource.data.projectName is string &&
-                       request.resource.data.url is string &&
-                       request.resource.data.createdAt == request.time;
+
+    /**
+     * @description: Controls access to user profile information.
+     * @path: /users/{userId}
+     * @allow: User can create their own profile (self-registration): request.auth.uid == userId
+     * @allow: User can read their own profile: request.auth.uid == userId
+     * @allow: User can update their own profile: request.auth.uid == userId
+     * @allow: User can delete their own profile: request.auth.uid == userId
+     * @deny: User cannot create a profile with a different userId: request.auth.uid != userId
+     * @deny: User cannot read another user's profile: request.auth.uid != userId
+     * @principle: Enforces document ownership for all operations.
+     */
+    match /users/{userId} {
+      //function
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if false; // Prevent listing all users
+
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isOwner(userId) && resource.data.id == userId;
+      allow delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description: Controls access to uploaded links for a specific user.
+     * @path: /users/{userId}/uploadedLinks/{uploadId}
+     * @allow: User can create an uploaded link under their profile: request.auth.uid == userId
+     * @allow: User can read their own uploaded link: request.auth.uid == userId
+     * @allow: User can update their own uploaded link: request.auth.uid == userId
+     * @allow: User can delete their own uploaded link: request.auth.uid == userId
+     * @deny: User cannot create an uploaded link under another user's profile: request.auth.uid != userId
+     * @deny: User cannot read another user's uploaded link: request.auth.uid != userId
+     * @principle: Enforces document ownership for all operations on uploaded links.
+     */
+    match /users/{userId}/uploadedLinks/{uploadId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && resource.data.userId == userId && resource != null;
+      allow delete: if isOwner(userId) && resource != null;
     }
   }
 }
