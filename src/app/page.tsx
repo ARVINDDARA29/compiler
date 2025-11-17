@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -20,6 +21,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 const initialHtml = `<header class="hero">
   <h1>My Awesome Product</h1>
@@ -98,6 +101,8 @@ const initialJs = `document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 `;
 
+type MobileView = 'editor' | 'preview';
+
 export default function Home() {
   const [htmlCode, setHtmlCode] = useState(initialHtml);
   const [cssCode, setCssCode] = useState(initialCss);
@@ -117,11 +122,12 @@ export default function Home() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const [isClient, setIsClient] = useState(false);
-  
   const [isFullScreenPreviewOpen, setIsFullScreenPreviewOpen] = useState(false);
 
+  const [mobileView, setMobileView] = useState<MobileView>('editor');
+
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const runCode = () => {
     setSrcDoc(`
@@ -135,15 +141,18 @@ export default function Home() {
         </body>
       </html>
     `);
+    if (isMobile) {
+      setMobileView('preview');
+    }
   };
 
   useEffect(() => {
-    setIsClient(true);
     runCode();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isMobile) return;
     e.preventDefault();
     setIsDragging(true);
   };
@@ -154,7 +163,7 @@ export default function Home() {
   
   useEffect(() => {
       const handleMouseMove = (e: MouseEvent) => {
-        if (!isDragging || !containerRef.current) return;
+        if (!isDragging || !containerRef.current || isMobile) return;
         const containerRect = containerRef.current.getBoundingClientRect();
         const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
         if (newWidth > 20 && newWidth < 80) {
@@ -169,7 +178,7 @@ export default function Home() {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
       };
-  }, [isDragging]);
+  }, [isDragging, isMobile]);
 
   const handleDeploy = async () => {
     if (!projectName) {
@@ -254,14 +263,19 @@ export default function Home() {
         isDeploying={isDeploying}
         onDeploy={() => setIsDeployDialogOpen(true)}
         onRun={runCode}
+        mobileView={mobileView}
+        onSwitchToCode={() => setMobileView('editor')}
       />
       <main
         ref={containerRef}
-        className="flex flex-1 overflow-hidden"
+        className="flex flex-1 overflow-hidden md:flex-row flex-col"
       >
         <div
-          className="flex flex-col h-full overflow-hidden"
-          style={{ width: `${sidebarWidth}%` }}
+          className={cn(
+            "flex flex-col h-full overflow-hidden",
+            isMobile ? (mobileView === 'editor' ? 'flex' : 'hidden') : 'flex'
+          )}
+          style={{ width: isMobile ? '100%' : `${sidebarWidth}%` }}
         >
           <CodeEditor
             htmlCode={htmlCode}
@@ -272,13 +286,18 @@ export default function Home() {
             setJsCode={setJsCode}
           />
         </div>
+
         <div
           onMouseDown={handleMouseDown}
-          className="w-2 h-full cursor-col-resize bg-border hover:bg-primary/20 transition-colors"
+          className="w-2 h-full cursor-col-resize bg-border hover:bg-primary/20 transition-colors hidden md:block"
         />
+
         <div
-          className="flex flex-col h-full overflow-hidden"
-          style={{ width: `${100 - sidebarWidth}%` }}
+          className={cn(
+            "flex flex-col h-full overflow-hidden",
+            isMobile ? (mobileView === 'preview' ? 'flex' : 'hidden') : 'flex'
+          )}
+          style={{ width: isMobile ? '100%' : `${100 - sidebarWidth}%` }}
         >
           <Tabs defaultValue="preview" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
             <div className="flex items-center justify-between pr-2 bg-muted rounded-t-md">
@@ -296,6 +315,7 @@ export default function Home() {
           </Tabs>
         </div>
       </main>
+
       <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -340,6 +360,7 @@ export default function Home() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
       <Dialog open={isFullScreenPreviewOpen} onOpenChange={setIsFullScreenPreviewOpen}>
         <DialogContent className="w-screen h-screen max-w-full max-h-full p-0 m-0">
           <DialogHeader className="sr-only">

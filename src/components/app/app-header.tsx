@@ -1,16 +1,21 @@
+
 'use client';
 
 import type { FC } from 'react';
-import { Loader2, Rocket, Play } from 'lucide-react';
+import { Loader2, Rocket, Play, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AppHeaderProps {
   isDeploying: boolean;
   onDeploy: () => void;
   onRun: () => void;
+  mobileView: 'editor' | 'preview';
+  onSwitchToCode: () => void;
 }
 
-const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun }) => {
+const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileView, onSwitchToCode }) => {
+  const isMobile = useIsMobile();
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-3">
@@ -18,6 +23,12 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun }) => {
         <h1 className="text-lg font-semibold md:text-xl font-headline">CodeDeploy</h1>
       </div>
       <div className="flex items-center gap-2">
+        {isMobile && mobileView === 'preview' && (
+           <Button onClick={onSwitchToCode} variant="outline" size="sm">
+            <Code className="mr-2 h-4 w-4" />
+            Code
+          </Button>
+        )}
         <Button onClick={onRun} variant="outline" size="sm">
           <Play className="mr-2 h-4 w-4" />
           Run
