@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react';
@@ -14,7 +14,7 @@ interface DeployedSite {
   id: string;
   projectName: string;
   url: string;
-  deployedAt: Date;
+  deployedAt: Timestamp; // Changed to Timestamp
 }
 
 export default function MySitesPage() {
@@ -37,6 +37,13 @@ export default function MySitesPage() {
     if (!user || !firestore) return;
     const docRef = doc(firestore, `users/${user.uid}/deployedSites`, siteId);
     deleteDocumentNonBlocking(docRef);
+  };
+
+  const formatDate = (timestamp: Timestamp) => {
+    if (timestamp && typeof timestamp.toDate === 'function') {
+      return timestamp.toDate().toLocaleString();
+    }
+    return 'Invalid date';
   };
 
   return (
@@ -81,7 +88,7 @@ export default function MySitesPage() {
                         {site.url}
                       </a>
                       <span className="text-xs text-muted-foreground mt-1">
-                        Deployed on: {site.deployedAt instanceof Date ? site.deployedAt.toLocaleString() : new Date((site.deployedAt as any).seconds * 1000).toLocaleString()}
+                        Deployed on: {formatDate(site.deployedAt)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
