@@ -1,18 +1,7 @@
+
 'use server';
 
 import { z } from 'zod';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDoc, collection } from 'firebase/firestore';
-import { firebaseConfig } from '@/firebase/config';
-
-// Initialize Firebase Admin SDK
-// Ensure you have the necessary configuration in your environment
-if (!getApps().length) {
-    initializeApp(firebaseConfig);
-}
-
-const db = getFirestore();
-
 
 const REPO_OWNER = 'adbossappmaker';
 const REPO_NAME = 'sites';
@@ -33,15 +22,11 @@ type DeployResult = {
 };
 
 async function getGitHubToken(): Promise<string> {
-    const gitapiCollection = collection(db, 'gitapi');
-    const docRef = doc(gitapiCollection, 'main'); // Assuming a single doc named 'main' holds the token
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists() && docSnap.data()?.token) {
-        return docSnap.data().token;
-    } else {
-        throw new Error('GitHub API token not found in Firestore. Please add it to the "gitapi" collection with a document ID of "main".');
+    const token = process.env.GITHUB_TOKEN;
+    if (!token) {
+        throw new Error('GitHub API token not found. Please add it to your .env file as GITHUB_TOKEN.');
     }
+    return token;
 }
 
 
