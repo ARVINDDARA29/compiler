@@ -327,7 +327,7 @@ export default function Home() {
 
     toast({
       title: 'Deploying Project...',
-      description: "Your site will be ready in about 45 seconds. If it's not live after a minute, try refreshing the page.",
+      description: "Your site will be ready in about 45 seconds. If traffic is high, it can sometimes take up to 1 hour.",
     });
 
     const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
@@ -707,3 +707,5 @@ export default function Home() {
       
     </div>
   );
+
+    
