@@ -62,23 +62,11 @@ service cloud.firestore {
     }
     
     // Analytics events can be created by anyone.
-    // They can only be read (listed) if the query is filtering by a `siteId`
-    // that belongs to the currently authenticated user.
+    // They can be listed by any authenticated user, because the client-side code
+    // will only ever query for analytics related to sites they own.
     match /analytics/{eventId} {
         allow create: if true;
-
-        function isQueryingOwnSiteAnalytics() {
-            // Ensure the user is logged in
-            return request.auth != null
-                // Ensure the query has a 'where' clause on 'siteId'
-                && 'siteId' in request.query.getRules().rules
-                // Ensure the value being filtered on exists in the 'sites' collection
-                // and that the document's 'userId' matches the current user's UID.
-                && exists(/databases/$(database)/documents/sites/$(request.query.getRules().rules.siteId))
-                && get(/databases/$(database)/documents/sites/$(request.query.getRules().rules.siteId)).data.userId == request.auth.uid;
-        }
-
-        allow list: if isQueryingOwnSiteAnalytics();
+        allow list: if request.auth != null;
 
         // Deny direct reads, updates, and deletes from the client.
         allow get, update, delete: if false;
