@@ -207,8 +207,6 @@ export default function Home() {
   const [feedbackComment, setFeedbackComment] = useState('');
   const [lastDeployedProject, setLastDeployedProject] = useState('');
 
-  const [isWeb2AppDialogOpen, setIsWeb2AppDialogOpen] = useState(false);
-
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { user } = useUser();
@@ -516,11 +514,6 @@ export default function Home() {
       }
   }
 
-  const handleWeb2AppConfirm = () => {
-    window.open('https://www.webintoapp.com/app-maker', '_blank');
-    setIsWeb2AppDialogOpen(false);
-  }
-
   return (
     <div className="flex h-screen w-screen flex-col bg-background">
       <AppHeader
@@ -531,7 +524,6 @@ export default function Home() {
         mobileView={mobileView}
         onSwitchToCode={() => setMobileView('editor')}
         onFeedbackClick={() => setIsFeedbackDialogOpen(true)}
-        onWeb2AppClick={() => setIsWeb2AppDialogOpen(true)}
       />
       <input 
         type="file" 
@@ -708,28 +700,6 @@ export default function Home() {
             </Button>
             <Button type="button" onClick={handleFeedbackSubmit}>
               Submit Feedback
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isWeb2AppDialogOpen} onOpenChange={setIsWeb2AppDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Convert Your Site to a Mobile App</DialogTitle>
-            <DialogDescription>
-              You can turn any of your deployed websites into a native Android or iOS app. After deploying your site, take the URL and use a free online service to convert it.
-            </DialogDescription>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Clicking 'Confirm' will take you to an external service (webintoapp.com) to complete this process. This is a third-party service not affiliated with RunAndDeploy.
-          </p>
-          <DialogFooter className="sm:justify-between pt-4">
-             <Button type="button" variant="outline" onClick={() => setIsWeb2AppDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleWeb2AppConfirm}>
-              Confirm & Continue
             </Button>
           </DialogFooter>
         </DialogContent>
