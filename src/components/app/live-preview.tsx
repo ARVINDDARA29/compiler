@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface LivePreviewProps {
@@ -22,7 +22,7 @@ const LivePreview = forwardRef<HTMLIFrameElement, LivePreviewProps>(
                   ref={ref}
                   srcDoc={srcDoc}
                   title="Live Preview"
-                  sandbox="allow-scripts allow-modals allow-forms"
+                  sandbox="allow-scripts allow-modals allow-forms allow-same-origin"
                   frameBorder="0"
                   width="100%"
                   height="100%"

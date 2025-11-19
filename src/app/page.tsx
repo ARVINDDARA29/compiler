@@ -239,30 +239,37 @@ export default function Home() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const runCode = () => {
-    const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
-    
-    if (isFullHtml) {
-        // If it's a full HTML document, use it as is.
-        setSrcDoc(htmlCode);
-    } else {
-        // Otherwise, build it from the separate code sections.
-        setSrcDoc(`
-            <html>
-                <head>
-                    <style>${cssCode}</style>
-                </head>
-                <body>
-                    ${htmlCode}
-                    <script>${jsCode}</script>
-                </body>
-            </html>
-        `);
-    }
+    const getCode = () => {
+      const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
+      if (isFullHtml) {
+          return htmlCode;
+      } else {
+          return `
+              <html>
+                  <head>
+                      <style>${cssCode}</style>
+                  </head>
+                  <body>
+                      ${htmlCode}
+                      <script>${jsCode}</script>
+                  </body>
+              </html>
+          `;
+      }
+    };
+
+    // Force iframe to reload by setting srcDoc to empty first
+    setSrcDoc('');
+    // Use a short timeout to allow the DOM to update
+    setTimeout(() => {
+        setSrcDoc(getCode());
+    }, 0);
 
     if (isMobile) {
         setMobileView('preview');
     }
-};
+  };
+
 
   useEffect(() => {
     const fontLink = document.createElement('link');
