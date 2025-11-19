@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useUser, useFirebase, useCollection } from '@/firebase';
+import { useUser, useFirebase, useCollection, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, where, Timestamp, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2, ServerCrash, BarChart, Eye, Users, FileText } from 'lucide-react';
@@ -78,61 +78,59 @@ export default function AnalyticsPage() {
       const fetchAnalytics = async () => {
         setIsAnalyticsLoading(true);
         setAnalyticsError(null);
-        try {
-          const siteIds = sites.map(s => s.projectName);
-          if (siteIds.length === 0) {
-            setIsAnalyticsLoading(false);
-            return;
-          }
-
-          // Firestore 'in' query can take up to 30 elements
-          const analyticsQuery = query(collection(firestore, 'analytics'), where('siteId', 'in', siteIds));
-          const querySnapshot = await getDocs(analyticsQuery);
-          
-          const events = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as AnalyticsEvent[];
-
-          // 3. Process events and calculate stats for each site
-          const processedData: Record<string, SiteAnalytics> = {};
-
-          for (const site of sites) {
-            const siteEvents = events.filter(e => e.siteId === site.projectName);
-            
-            const totalViews = siteEvents.length;
-            const uniqueVisitors = new Set(siteEvents.map(e => e.userAgent)).size;
-
-            const viewsByPath = siteEvents.reduce((acc, event) => {
-              const path = event.path || '/';
-              acc[path] = (acc[path] || 0) + 1;
-              return acc;
-            }, {} as Record<string, number>);
-
-            const viewsByDate = siteEvents.reduce((acc, event) => {
-                const date = format(event.timestamp.toDate(), 'MMM d');
-                acc[date] = (acc[date] || 0) + 1;
-                return acc;
-            }, {} as Record<string, number>);
-
-            const viewsOverTime = Object.entries(viewsByDate)
-                .map(([date, views]) => ({ date, views }))
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-
-            processedData[site.projectName] = {
-              totalViews,
-              uniqueVisitors,
-              viewsByPath,
-              viewsOverTime,
-            };
-          }
-          
-          setAnalyticsData(processedData);
-
-        } catch (error) {
-          console.error("Failed to fetch analytics data:", error);
-          setAnalyticsError("Could not load analytics data.");
-        } finally {
+        
+        const siteIds = sites.map(s => s.projectName);
+        if (siteIds.length === 0) {
           setIsAnalyticsLoading(false);
+          return;
         }
+
+        const analyticsQuery = query(collection(firestore, 'analytics'), where('siteId', 'in', siteIds));
+        
+        getDocs(analyticsQuery).then(querySnapshot => {
+            const events = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as AnalyticsEvent[];
+
+            const processedData: Record<string, SiteAnalytics> = {};
+            for (const site of sites) {
+                const siteEvents = events.filter(e => e.siteId === site.projectName);
+                
+                const totalViews = siteEvents.length;
+                const uniqueVisitors = new Set(siteEvents.map(e => e.userAgent)).size;
+
+                const viewsByPath = siteEvents.reduce((acc, event) => {
+                const path = event.path || '/';
+                acc[path] = (acc[path] || 0) + 1;
+                return acc;
+                }, {} as Record<string, number>);
+
+                const viewsByDate = siteEvents.reduce((acc, event) => {
+                    const date = format(event.timestamp.toDate(), 'MMM d');
+                    acc[date] = (acc[date] || 0) + 1;
+                    return acc;
+                }, {} as Record<string, number>);
+
+                const viewsOverTime = Object.entries(viewsByDate)
+                    .map(([date, views]) => ({ date, views }))
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+                processedData[site.projectName] = {
+                totalViews,
+                uniqueVisitors,
+                viewsByPath,
+                viewsOverTime,
+                };
+            }
+            setAnalyticsData(processedData);
+            setIsAnalyticsLoading(false);
+        }).catch(error => {
+            const permissionError = new FirestorePermissionError({
+                path: 'analytics',
+                operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            setAnalyticsError("Could not load analytics data.");
+            setIsAnalyticsLoading(false);
+        });
       };
       fetchAnalytics();
     } else if (sites && sites.length === 0) {
@@ -326,3 +324,5 @@ const SiteAnalyticsSkeleton = () => (
         </div>
     </div>
 );
+
+    
