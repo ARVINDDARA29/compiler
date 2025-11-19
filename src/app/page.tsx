@@ -214,6 +214,7 @@ export default function Home() {
   const [sidebarWidth, setSidebarWidth] = useState(50);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [isFullScreenPreviewOpen, setIsFullScreenPreviewOpen] = useState(false);
 
@@ -259,11 +260,15 @@ export default function Home() {
     };
 
     // Force iframe to reload by setting srcDoc to empty first
-    setSrcDoc('');
+    if(iframeRef.current) {
+        iframeRef.current.srcdoc = '';
+    }
     // Use a short timeout to allow the DOM to update
     setTimeout(() => {
-        setSrcDoc(getCode());
-    }, 0);
+        if(iframeRef.current) {
+            iframeRef.current.srcdoc = getCode();
+        }
+    }, 50);
 
     if (isMobile) {
         setMobileView('preview');
@@ -272,17 +277,8 @@ export default function Home() {
 
 
   useEffect(() => {
-    const fontLink = document.createElement('link');
-    fontLink.href = 'https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap';
-    fontLink.rel = 'stylesheet';
-    document.head.appendChild(fontLink);
-
     const timeoutId = setTimeout(runCode, 250);
-
-    return () => {
-        document.head.removeChild(fontLink);
-        clearTimeout(timeoutId);
-    }
+    return () => clearTimeout(timeoutId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [htmlCode, cssCode, jsCode]); 
 
@@ -481,15 +477,76 @@ export default function Home() {
     });
   };
   
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    let importedFiles = 0;
+
+    const readFile = (file: File) => {
+        return new Promise<void>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const content = event.target?.result as string;
+                if (file.name.endsWith('.html')) {
+                    setHtmlCode(content);
+                    importedFiles++;
+                } else if (file.name.endsWith('.css')) {
+                    setCssCode(content);
+                    importedFiles++;
+                } else if (file.name.endsWith('.js')) {
+                    setJsCode(content);
+                    importedFiles++;
+                }
+                resolve();
+            };
+            reader.readAsText(file);
+        });
+    };
+
+    const filePromises = Array.from(files).map(readFile);
+
+    Promise.all(filePromises).then(() => {
+        if (importedFiles > 0) {
+            toast({
+                title: 'Files Imported',
+                description: `Successfully imported ${importedFiles} file(s).`,
+            });
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'No Compatible Files',
+                description: 'Could not find any .html, .css, or .js files to import.',
+            });
+        }
+    });
+
+    // Reset the input value to allow importing the same file again
+    e.target.value = '';
+  };
+  
   return (
     <div className="flex h-screen w-screen flex-col bg-background">
       <AppHeader
         isDeploying={isDeploying}
         onDeploy={openDeployDialog}
         onRun={runCode}
+        onImport={handleImportClick}
         mobileView={mobileView}
         onSwitchToCode={() => setMobileView('editor')}
         onFeedbackClick={() => setIsFeedbackDialogOpen(true)}
+      />
+      <input 
+        type="file" 
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        multiple 
+        accept=".html,.css,.js" 
+        className="hidden" 
       />
       <div className="flex flex-col flex-1 h-full overflow-hidden">
         <main

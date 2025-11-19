@@ -1,8 +1,7 @@
-
 'use client';
 
 import type { FC } from 'react';
-import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid } from 'lucide-react';
+import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser, useAuth } from '@/firebase';
@@ -14,12 +13,13 @@ interface AppHeaderProps {
   isDeploying: boolean;
   onDeploy: () => void;
   onRun: () => void;
+  onImport: () => void;
   mobileView: 'editor' | 'preview';
   onSwitchToCode: () => void;
   onFeedbackClick: () => void;
 }
 
-const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileView, onSwitchToCode, onFeedbackClick }) => {
+const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, onImport, mobileView, onSwitchToCode, onFeedbackClick }) => {
   const isMobile = useIsMobile();
   const { user } = useUser();
   const auth = useAuth();
@@ -44,6 +44,10 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileVie
             Code
           </Button>
         )}
+        <Button onClick={onImport} variant="outline" size="sm">
+          <Upload className="mr-2 h-4 w-4" />
+          Import
+        </Button>
         <Button onClick={onRun} variant="outline" size="sm">
           <Play className="mr-2 h-4 w-4" />
           Run
@@ -102,5 +106,3 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileVie
 };
 
 export default AppHeader;
-
-    
