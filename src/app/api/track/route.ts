@@ -82,14 +82,37 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Handler for GET requests to show a simple message or documentation
+/**
+ * Serves the tracking script.
+ */
 export async function GET(req: NextRequest) {
-    const headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
-    };
-    return new NextResponse(JSON.stringify({ message: 'Analytics tracking endpoint. Use POST to submit data.' }), {
-        status: 200,
-        headers
+    const scriptContent = `
+(function() {
+    if (document.currentScript) {
+        const siteId = document.currentScript.getAttribute('data-site-id');
+        const apiHost = document.currentScript.getAttribute('data-api-host');
+        if (siteId && apiHost) {
+            const data = {
+                siteId: siteId,
+                path: window.location.pathname,
+                userAgent: navigator.userAgent,
+            };
+            fetch(apiHost + '/api/track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                mode: 'cors',
+            }).catch(error => console.error('Analytics track error:', error));
+        }
+    }
+})();
+    `;
+    return new NextResponse(scriptContent, {
+        headers: {
+            'Content-Type': 'application/javascript',
+            'Access-Control-Allow-Origin': '*',
+        }
     });
 }

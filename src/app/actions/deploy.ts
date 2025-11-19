@@ -83,7 +83,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     
   const analyticsScript = enableAnalytics
     ? `
-    <script async defer src="https://runanddeploy.web.app/track.js" data-site-id="${projectName}"></script>
+    <script async defer src="/track.js" data-site-id="${projectName}" data-api-host="https://runanddeploy.web.app"></script>
     `
     : '';
   
