@@ -3,12 +3,14 @@
  *
  * Core Philosophy:
  * This ruleset enforces a user-ownership model. Users can only read and write their own data.
+ * Public data is generally read-only.
  *
  * Data Structure:
  * - /users/{userId}: Stores public user profile information.
  * - /sites/{siteId}: Stores all deployed sites. Access is scoped by userId.
  * - /feedbacks/{feedbackId}: Stores user feedback. Users can only write their own feedback.
  * - /gitapi/{apiId}: Stores the GitHub API token. Should only be readable by server functions.
+ * - /analytics/{eventId}: Analytics events. Can be written publicly.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -57,6 +59,13 @@ service cloud.firestore {
     match /gitapi/{apiId} {
       allow get: if true; // Allows the server action to read the token.
       allow list, create, update, delete: if false; // Deny all writes from the client.
+    }
+    
+    // Analytics events can be created by anyone (the tracking script is public)
+    // but should not be readable or updatable from the client to protect data.
+    match /analytics/{eventId} {
+        allow create: if true;
+        allow read, update, delete: if false; // Only backend processes should read analytics
     }
   }
 }

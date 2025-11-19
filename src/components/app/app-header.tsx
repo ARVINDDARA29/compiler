@@ -1,7 +1,7 @@
 'use client';
 
 import type { FC } from 'react';
-import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload } from 'lucide-react';
+import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser, useAuth } from '@/firebase';
@@ -87,6 +87,12 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, onImport,
                   <Link href="/sites">
                     <LayoutGrid className="mr-2 h-4 w-4" />
                     <span>My Sites</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/analytics">
+                    <BarChart2 className="mr-2 h-4 w-4" />
+                    <span>Analytics</span>
                   </Link>
                 </DropdownMenuItem>
                <DropdownMenuItem onClick={onFeedbackClick}>
