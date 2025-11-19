@@ -2,12 +2,13 @@
 'use client';
 
 import type { FC } from 'react';
-import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus } from 'lucide-react';
+import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import Link from 'next/link';
 
 interface AppHeaderProps {
   isDeploying: boolean;
@@ -78,6 +79,12 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, mobileVie
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+               <DropdownMenuItem asChild>
+                  <Link href="/sites">
+                    <LayoutGrid className="mr-2 h-4 w-4" />
+                    <span>My Sites</span>
+                  </Link>
+                </DropdownMenuItem>
                <DropdownMenuItem onClick={onFeedbackClick}>
                 <MessageSquarePlus className="mr-2 h-4 w-4" />
                 <span>Feedback</span>
