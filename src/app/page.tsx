@@ -29,80 +29,116 @@ import { collection, doc, setDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
 import { generateCode } from '@/ai/flows/generate-code-flow';
 
-const initialHtml = `<header class="hero">
-  <h1>My Awesome Product</h1>
-  <p>A solution for all your needs. Innovative, fast, and reliable.</p>
-  <a href="#about" class="cta-button">Learn More</a>
-</header>
-<section id="about" class="about-us">
-  <h2>About Us</h2>
-  <p>We are a team of passionate developers dedicated to creating the best products. Our mission is to solve real-world problems with elegant and efficient solutions.</p>
-</section>
+const initialHtml = `<div class="container">
+  <header class="header">
+    <h1 class="title">RunAndDeploy</h1>
+    <p class="subtitle">By Arvind Bishnoi</p>
+  </header>
+  <main class="main-content">
+    <h2 class="section-title">Welcome to Your Live Project</h2>
+    <p class="section-text">
+      This is a simple, elegant starting point. Edit the HTML, CSS, and JavaScript code to build your own creation, and deploy it to the web with a single click.
+    </p>
+    <a href="https://github.com/arvindbishnoi" target="_blank" class="cta-button">
+      Visit My GitHub
+    </a>
+  </main>
+  <footer class="footer">
+    <p>&copy; 2024. Created with RunAndDeploy.</p>
+  </footer>
+</div>
 `;
 
 const initialCss = `body {
-  font-family: sans-serif;
+  font-family: 'Inter', sans-serif;
   margin: 0;
-  padding: 0;
-  background-color: #f9f9f9;
+  background-color: #f0f2f5;
   color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
   line-height: 1.6;
 }
 
-.hero {
-  background-color: #2E3192;
-  color: white;
-  padding: 4rem 2rem;
+.container {
+  width: 100%;
+  max-width: 800px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
   text-align: center;
 }
 
-.hero h1 {
-  font-size: 3rem;
+.header {
+  background: linear-gradient(135deg, #2E3192, #6639A6);
+  color: white;
+  padding: 3rem 1.5rem;
+}
+
+.title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  font-weight: 400;
+  opacity: 0.8;
+  margin-top: 0.5rem;
+}
+
+.main-content {
+  padding: 3rem 2rem;
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #2E3192;
   margin-bottom: 1rem;
 }
 
-.hero p {
-  font-size: 1.2rem;
-  margin-bottom: 2rem;
+.section-text {
+  font-size: 1rem;
+  color: #555;
+  max-width: 600px;
+  margin: 0 auto 2rem;
 }
 
 .cta-button {
+  display: inline-block;
   background-color: #6639A6;
   color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
+  padding: 12px 24px;
+  border-radius: 8px;
   text-decoration: none;
   font-size: 1rem;
-  transition: background-color 0.3s;
+  font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .cta-button:hover {
   background-color: #522d83;
+  transform: translateY(-2px);
 }
 
-.about-us {
-  padding: 4rem 2rem;
-  text-align: center;
-  background-color: #fff;
-}
-
-.about-us h2 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  color: #2E3192;
+.footer {
+  background-color: #f9f9f9;
+  color: #777;
+  padding: 1.5rem;
+  font-size: 0.9rem;
+  border-top: 1px solid #e5e5e5;
 }
 `;
 
-const initialJs = `document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-  anchor.addEventListener('click', function (e) {
-    e.preventDefault();
+const initialJs = `console.log("Welcome to your RunAndDeploy project!");
 
-    document.querySelector(this.getAttribute('href')).scrollIntoView({
-      behavior: 'smooth'
-    });
-  });
+document.querySelector('.cta-button').addEventListener('click', () => {
+  console.log('GitHub link clicked!');
 });
 `;
 
