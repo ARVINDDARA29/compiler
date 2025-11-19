@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Expand, Star, MessageSquarePlus } from 'lucide-react';
+import { Copy, Check, Expand, Star, MessageSquarePlus, Upload } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -23,7 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { useUser, useFirebase } from '@/firebase';
+import { useUser, useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { AuthDialog } from '@/components/app/auth-dialog';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
@@ -212,9 +212,7 @@ export default function Home() {
   const { user } = useUser();
   const { firestore } = useFirebase();
 
-  const generateSrcDoc = (forceFullRender = false) => {
-    // If we're forcing a render, we can use a key or other mechanism if needed,
-    // but regenerating the content itself is the main goal.
+  const generateSrcDoc = () => {
     const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
     if (isFullHtml) {
         return htmlCode;
@@ -233,11 +231,9 @@ export default function Home() {
   };
   
   const runCode = () => {
-    // Forcing re-render by briefly setting to empty string.
     setSrcDoc(''); 
     setTimeout(() => {
-        const newSrcDoc = generateSrcDoc(true);
-        setSrcDoc(newSrcDoc);
+        setSrcDoc(generateSrcDoc());
     }, 0);
     
     if (isMobile) {
@@ -336,31 +332,38 @@ export default function Home() {
 
     const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
 
-    const deploymentPromise = deployToGithub({
-      html: isFullHtml ? htmlCode : htmlCode,
-      css: isFullHtml ? '' : cssCode,
-      js: isFullHtml ? '' : jsCode,
-      projectName,
-      addWatermark,
-      enableAnalytics,
-    });
-    
-    const timerPromise = new Promise(resolve => setTimeout(resolve, 45000));
-
     try {
-      const [deploymentResult] = await Promise.all([deploymentPromise, timerPromise]);
+      const deploymentResult = await deployToGithub({
+          html: isFullHtml ? htmlCode : htmlCode,
+          css: isFullHtml ? '' : cssCode,
+          js: isFullHtml ? '' : jsCode,
+          projectName,
+          addWatermark,
+          enableAnalytics,
+      });
 
       if (deploymentResult.success && deploymentResult.url) {
         
         const sitesCollectionRef = collection(firestore, 'sites');
         const newSiteRef = doc(sitesCollectionRef, projectName);
-
-        await setDoc(newSiteRef, {
+        const siteData = {
           userId: user.uid,
           projectName: projectName,
           url: deploymentResult.url,
           deployedAt: new Date(),
+        };
+
+        setDoc(newSiteRef, siteData).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({
+                path: newSiteRef.path,
+                operation: 'create',
+                requestResourceData: siteData
+            });
+            errorEmitter.emit('permission-error', permissionError);
         });
+        
+        // Wait 45 seconds before showing success, to give GitHub pages time to build
+        await new Promise(resolve => setTimeout(resolve, 45000));
         
         setLastDeployedProject(projectName);
 
@@ -422,33 +425,36 @@ export default function Home() {
     
     if (!user || !firestore) return;
 
-    try {
-        const feedbackCollectionRef = collection(firestore, 'feedbacks');
-        const newFeedbackRef = doc(feedbackCollectionRef);
-        await setDoc(newFeedbackRef, {
-            userId: user.uid,
-            projectName: lastDeployedProject || 'general',
-            rating: feedbackRating,
-            comment: feedbackComment,
-            submittedAt: new Date(),
+    const feedbackCollectionRef = collection(firestore, 'feedbacks');
+    const newFeedbackRef = doc(feedbackCollectionRef);
+    const feedbackData = {
+        userId: user.uid,
+        projectName: lastDeployedProject || 'general',
+        rating: feedbackRating,
+        comment: feedbackComment,
+        submittedAt: new Date(),
+    };
+
+    setDoc(newFeedbackRef, feedbackData)
+        .then(() => {
+            toast({
+                title: 'Feedback Submitted!',
+                description: 'Thank you for your feedback.',
+            });
+        })
+        .catch(async (error) => {
+             const permissionError = new FirestorePermissionError({
+                path: newFeedbackRef.path,
+                operation: 'create',
+                requestResourceData: feedbackData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
         });
 
-        toast({
-            title: 'Feedback Submitted!',
-            description: 'Thank you for your feedback.',
-        });
-    } catch (error) {
-         toast({
-            variant: 'destructive',
-            title: 'Feedback Failed',
-            description: 'Could not submit your feedback. Please try again.',
-        });
-    } finally {
-        setIsFeedbackDialogOpen(false);
-        setFeedbackRating(0);
-        setFeedbackComment('');
-        setLastDeployedProject('');
-    }
+    setIsFeedbackDialogOpen(false);
+    setFeedbackRating(0);
+    setFeedbackComment('');
+    setLastDeployedProject('');
   };
   
   const handleImportClick = () => {
@@ -502,6 +508,12 @@ export default function Home() {
     e.target.value = '';
   };
   
+  const handleEditorClick = (e: React.MouseEvent) => {
+      if (iframeRef.current && e.target === iframeRef.current) {
+          e.stopPropagation();
+      }
+  }
+
   return (
     <div className="flex h-screen w-screen flex-col bg-background">
       <AppHeader
@@ -525,6 +537,7 @@ export default function Home() {
         <main
           ref={containerRef}
           className="flex flex-1 overflow-hidden md:flex-row flex-col"
+          onClick={handleEditorClick}
         >
           <div
             className={cn(
@@ -694,4 +707,5 @@ export default function Home() {
       
     </div>
   );
-}
+
+    

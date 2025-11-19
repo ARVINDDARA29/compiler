@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirebase } from '@/firebase';
+import { useAuth, useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -40,23 +41,29 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
   const auth = useAuth();
   const { firestore } = useFirebase();
 
-  const handleAuthSuccess = async (user: User, isNewUser = false) => {
+  const handleAuthSuccess = (user: User, isNewUser = false) => {
     if (isNewUser && firestore) {
-      // Update profile and create user document
-      try {
-        await updateProfile(user, { displayName: name });
-        const userDocRef = doc(firestore, 'users', user.uid);
-        // Use standard setDoc for reliability
-        await setDoc(userDocRef, {
-          name: name,
-          email: user.email,
-          id: user.uid,
-        }, { merge: true });
-        toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
-      } catch (error) {
-        console.error("Failed to create user document:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not save user profile.' });
-      }
+      updateProfile(user, { displayName: name }).then(() => {
+          const userDocRef = doc(firestore, 'users', user.uid);
+          const userData = {
+            name: name,
+            email: user.email,
+            id: user.uid,
+          };
+          setDoc(userDocRef, userData, { merge: true }).catch(async (error) => {
+              const permissionError = new FirestorePermissionError({
+                  path: userDocRef.path,
+                  operation: 'create',
+                  requestResourceData: userData
+              });
+              errorEmitter.emit('permission-error', permissionError);
+          });
+      }).catch(error => {
+          console.error("Failed to update user profile:", error);
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not update user profile.' });
+      });
+      toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
+
     } else {
       toast({ title: 'Login successful!', description: 'You can now deploy your project.' });
     }
@@ -77,10 +84,10 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
           return;
         }
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await handleAuthSuccess(userCredential.user, true);
+        handleAuthSuccess(userCredential.user, true);
       } else {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        await handleAuthSuccess(userCredential.user, false);
+        handleAuthSuccess(userCredential.user, false);
       }
     } catch (error) {
       const authError = error as AuthError;
@@ -172,4 +179,5 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
       </DialogContent>
     </Dialog>
   );
-}
+
+    
