@@ -13,7 +13,6 @@ const schema = z.object({
   js: z.string(),
   projectName: z.string().min(1, 'Project name is required.'),
   addWatermark: z.boolean(),
-  enableAnalytics: z.boolean(),
 });
 
 type DeployResult = {
@@ -31,7 +30,7 @@ async function getGitHubToken(): Promise<string> {
 }
 
 
-export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string, addWatermark: boolean, enableAnalytics: boolean }): Promise<DeployResult> {
+export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string, addWatermark: boolean }): Promise<DeployResult> {
   const validation = schema.safeParse(data);
   if (!validation.success) {
     const formattedErrors = validation.error.format();
@@ -39,7 +38,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     return { success: false, error: errorMessage };
   }
 
-  const { html, css, js, projectName, addWatermark, enableAnalytics } = validation.data;
+  const { html, css, js, projectName, addWatermark } = validation.data;
   
   let GITHUB_TOKEN = '';
   try {
@@ -81,16 +80,11 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
   `
     : '';
     
-  const analyticsScript = enableAnalytics
-    ? `
-    <script async defer src="/track.js" data-site-id="${projectName}" data-api-host="https://runanddeploy.web.app"></script>
-    `
-    : '';
   
   const isFullHtml = html.trim().toLowerCase().startsWith('<!doctype html>') || html.trim().toLowerCase().startsWith('<html>');
   
   const fileContent = isFullHtml 
-    ? html.replace('</body>', `${analyticsScript}</body>`)
+    ? html
     : `
 <!DOCTYPE html>
 <html lang="en">
@@ -109,7 +103,6 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
   <script>
     ${js}
   </script>
-  ${analyticsScript}
 </body>
 </html>
   `.trim();

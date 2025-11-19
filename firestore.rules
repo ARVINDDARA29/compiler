@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Firestore Security Rules for RunAndDeploy application.
  *
@@ -10,7 +11,6 @@
  * - /sites/{siteId}: Stores all deployed sites. Access is scoped by userId.
  * - /feedbacks/{feedbackId}: Stores user feedback. Users can only write their own feedback.
  * - /gitapi/{apiId}: Stores the GitHub API token. Should only be readable by server functions.
- * - /analytics/{eventId}: Analytics events. Can be written publicly, read only by site owner.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -59,17 +59,6 @@ service cloud.firestore {
     match /gitapi/{apiId} {
       allow get: if true; // Allows the server action to read the token.
       allow list, create, update, delete: if false; // Deny all writes from the client.
-    }
-    
-    // Analytics events can be created by anyone.
-    // They can be listed by any authenticated user, because the client-side code
-    // will only ever query for analytics related to sites they own.
-    match /analytics/{eventId} {
-        allow create: if true;
-        allow list: if request.auth != null;
-
-        // Deny direct reads, updates, and deletes from the client.
-        allow get, update, delete: if false;
     }
   }
 }

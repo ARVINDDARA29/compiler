@@ -189,7 +189,6 @@ export default function Home() {
   
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
-  const [enableAnalytics, setEnableAnalytics] = useState(true);
 
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(50);
@@ -339,7 +338,6 @@ export default function Home() {
           js: isFullHtml ? '' : jsCode,
           projectName,
           addWatermark,
-          enableAnalytics,
       });
 
       if (deploymentResult.success && deploymentResult.url) {
@@ -409,7 +407,6 @@ export default function Home() {
       setIsDeploying(false);
       setProjectName('');
       setAddWatermark(true);
-      setEnableAnalytics(true);
     }
   };
 
@@ -624,21 +621,6 @@ export default function Home() {
                 />
                 <Label htmlFor="watermark" className="text-sm font-normal text-muted-foreground">
                   Add "RunAndDeploy" watermark
-                </Label>
-              </div>
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-               <Label htmlFor="analytics" className="text-right">
-                Analytics
-              </Label>
-              <div className="col-span-3 flex items-center space-x-2">
-                <Switch
-                  id="analytics"
-                  checked={enableAnalytics}
-                  onCheckedChange={setEnableAnalytics}
-                />
-                <Label htmlFor="analytics" className="text-sm font-normal text-muted-foreground">
-                  Enable anonymous analytics
                 </Label>
               </div>
             </div>
