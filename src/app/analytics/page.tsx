@@ -72,38 +72,31 @@ export default function AnalyticsPage() {
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
-  // 2. Fetch analytics for all sites when they are loaded
+  // 2. Fetch analytics for each site individually when they are loaded
   useEffect(() => {
     if (sites && sites.length > 0 && firestore) {
       const fetchAnalytics = async () => {
         setIsAnalyticsLoading(true);
         setAnalyticsError(null);
         
-        const siteIds = sites.map(s => s.projectName);
-        if (siteIds.length === 0) {
-          setIsAnalyticsLoading(false);
-          return;
-        }
+        const allProcessedData: Record<string, SiteAnalytics> = {};
 
-        const analyticsQuery = query(collection(firestore, 'analytics'), where('siteId', 'in', siteIds));
-        
-        getDocs(analyticsQuery).then(querySnapshot => {
-            const events = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as AnalyticsEvent[];
-
-            const processedData: Record<string, SiteAnalytics> = {};
-            for (const site of sites) {
-                const siteEvents = events.filter(e => e.siteId === site.projectName);
+        for (const site of sites) {
+            try {
+                const analyticsQuery = query(collection(firestore, 'analytics'), where('siteId', '==', site.projectName));
+                const querySnapshot = await getDocs(analyticsQuery);
+                const events = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as AnalyticsEvent[];
                 
-                const totalViews = siteEvents.length;
-                const uniqueVisitors = new Set(siteEvents.map(e => e.userAgent)).size;
+                const totalViews = events.length;
+                const uniqueVisitors = new Set(events.map(e => e.userAgent)).size;
 
-                const viewsByPath = siteEvents.reduce((acc, event) => {
-                const path = event.path || '/';
-                acc[path] = (acc[path] || 0) + 1;
-                return acc;
+                const viewsByPath = events.reduce((acc, event) => {
+                    const path = event.path || '/';
+                    acc[path] = (acc[path] || 0) + 1;
+                    return acc;
                 }, {} as Record<string, number>);
 
-                const viewsByDate = siteEvents.reduce((acc, event) => {
+                const viewsByDate = events.reduce((acc, event) => {
                     const date = format(event.timestamp.toDate(), 'MMM d');
                     acc[date] = (acc[date] || 0) + 1;
                     return acc;
@@ -113,24 +106,25 @@ export default function AnalyticsPage() {
                     .map(([date, views]) => ({ date, views }))
                     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-                processedData[site.projectName] = {
-                totalViews,
-                uniqueVisitors,
-                viewsByPath,
-                viewsOverTime,
+                allProcessedData[site.projectName] = {
+                    totalViews,
+                    uniqueVisitors,
+                    viewsByPath,
+                    viewsOverTime,
                 };
+            } catch (error) {
+                 const permissionError = new FirestorePermissionError({
+                    path: `analytics where siteId == ${site.projectName}`,
+                    operation: 'list',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                setAnalyticsError(`Could not load analytics for ${site.projectName}.`);
+                // Stop fetching on first error
+                break;
             }
-            setAnalyticsData(processedData);
-            setIsAnalyticsLoading(false);
-        }).catch(error => {
-            const permissionError = new FirestorePermissionError({
-                path: 'analytics',
-                operation: 'list',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            setAnalyticsError("Could not load analytics data.");
-            setIsAnalyticsLoading(false);
-        });
+        }
+        setAnalyticsData(allProcessedData);
+        setIsAnalyticsLoading(false);
       };
       fetchAnalytics();
     } else if (sites && sites.length === 0) {
@@ -193,9 +187,9 @@ export default function AnalyticsPage() {
                 return (
                     <div key={site.id}>
                         <h2 className="text-2xl font-semibold tracking-tight mb-4 border-b pb-2">{site.projectName}</h2>
-                        {isLoadingAnalyticsForSite ? (
+                        {isLoadingAnalyticsForSite && !analyticsData.hasOwnProperty(site.projectName) ? (
                            <SiteAnalyticsSkeleton />
-                        ) : data ? (
+                        ) : data && data.totalViews > 0 ? (
                            <div className="space-y-6">
                             <div className="grid gap-4 md:grid-cols-3">
                                 <Card>
@@ -324,5 +318,3 @@ const SiteAnalyticsSkeleton = () => (
         </div>
     </div>
 );
-
-    

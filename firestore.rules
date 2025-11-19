@@ -10,7 +10,7 @@
  * - /sites/{siteId}: Stores all deployed sites. Access is scoped by userId.
  * - /feedbacks/{feedbackId}: Stores user feedback. Users can only write their own feedback.
  * - /gitapi/{apiId}: Stores the GitHub API token. Should only be readable by server functions.
- * - /analytics/{eventId}: Analytics events. Can be written publicly.
+ * - /analytics/{eventId}: Analytics events. Can be written publicly, read only by site owner.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -39,7 +39,7 @@ service cloud.firestore {
       }
       
       allow list: if request.auth != null; // Allows querying, but will be filtered by 'where' clause in the app.
-      allow get: if isSiteOwner();
+      allow get: if request.auth != null; // Allow any authenticated user to get a single site doc.
 
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow delete: if isSiteOwner();
@@ -61,11 +61,27 @@ service cloud.firestore {
       allow list, create, update, delete: if false; // Deny all writes from the client.
     }
     
-    // Analytics events can be created by anyone (the tracking script is public)
-    // but should not be readable or updatable from the client to protect data.
+    // Analytics events can be created by anyone.
+    // They can only be read (listed) if the query is filtering by a `siteId`
+    // that belongs to the currently authenticated user.
     match /analytics/{eventId} {
         allow create: if true;
-        allow read, update, delete: if false; // Only backend processes should read analytics
+
+        function isQueryingOwnSiteAnalytics() {
+            // Ensure the user is logged in
+            return request.auth != null
+                // Ensure the query has a 'where' clause on 'siteId'
+                && 'siteId' in request.query.getRules().rules
+                // Ensure the value being filtered on exists in the 'sites' collection
+                // and that the document's 'userId' matches the current user's UID.
+                && exists(/databases/$(database)/documents/sites/$(request.query.getRules().rules.siteId))
+                && get(/databases/$(database)/documents/sites/$(request.query.getRules().rules.siteId)).data.userId == request.auth.uid;
+        }
+
+        allow list: if isQueryingOwnSiteAnalytics();
+
+        // Deny direct reads, updates, and deletes from the client.
+        allow get, update, delete: if false;
     }
   }
 }
