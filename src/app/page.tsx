@@ -29,117 +29,524 @@ import { collection, doc, setDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
 import { generateCode } from '@/ai/flows/generate-code-flow';
 
-const initialHtml = `<div class="container">
-  <header class="header">
-    <h1 class="title">RunAndDeploy</h1>
-    <p class="subtitle">By Arvind Bishnoi</p>
-  </header>
-  <main class="main-content">
-    <h2 class="section-title">Welcome to Your Live Project</h2>
-    <p class="section-text">
-      This is a simple, elegant starting point. Edit the HTML, CSS, and JavaScript code to build your own creation, and deploy it to the web with a single click.
-    </p>
-    <a href="https://github.com/arvindbishnoi" target="_blank" class="cta-button">
-      Visit My GitHub
-    </a>
-  </main>
-  <footer class="footer">
-    <p>&copy; 2024. Created with RunAndDeploy.</p>
-  </footer>
-</div>
-`;
+const initialHtml = `<div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="uiLayer">
+        <div class="hud" id="hud">
+            <div class="score-box">SCORE: <span id="scoreVal">0</span></div>
+            <div class="score-box" style="border-color: #ff0055;">HI: <span id="highScoreVal">0</span></div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen">
+            <h1>Highway<br>Racer</h1>
+            <p>Dodge traffic & survive!</p>
+            <p>PC: Arrow Keys<br>Mobile: Tap Left/Right</p>
+            <button onclick="startGame()">START ENGINE</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="screen hidden">
+            <h1 style="color: #ff0055;">CRASHED!</h1>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button onclick="resetGame()">RETRY</button>
+        </div>
+
+        <div class="controls-hint" id="mobileHint">Tap Left / Right to Steer</div>
+    </div>
+</div>`;
 
 const initialCss = `body {
-  font-family: 'Inter', sans-serif;
-  margin: 0;
-  background-color: #f0f2f5;
-  color: #333;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #222;
+    font-family: 'Orbitron', sans-serif;
+    touch-action: none; /* Prevent pull-to-refresh on mobile */
 }
 
-.container {
-  width: 100%;
-  max-width: 800px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  text-align: center;
+#gameContainer {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    background: #111;
 }
 
-.header {
-  background: linear-gradient(135deg, #2E3192, #6639A6);
-  color: white;
-  padding: 3rem 1.5rem;
+canvas {
+    background: #333;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    max-width: 100%;
+    height: 100%;
 }
 
-.title {
-  font-size: 3.5rem;
-  font-weight: 700;
-  margin: 0;
-  letter-spacing: 1px;
+/* UI Overlay */
+#uiLayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.subtitle {
-  font-size: 1.2rem;
-  font-weight: 400;
-  opacity: 0.8;
-  margin-top: 0.5rem;
+.hud {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    box-sizing: border-box;
+    color: #fff;
+    text-shadow: 2px 2px 0 #000;
+    z-index: 10;
 }
 
-.main-content {
-  padding: 3rem 2rem;
+.score-box {
+    font-size: 24px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 5px 15px;
+    border-radius: 10px;
+    border: 2px solid #00ffcc;
 }
 
-.section-title {
-  font-size: 2rem;
-  font-weight: 600;
-  color: #2E3192;
-  margin-bottom: 1rem;
+/* Screens (Start/Game Over) */
+.screen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    padding: 40px;
+    border-radius: 20px;
+    border: 3px solid #00ffcc;
+    text-align: center;
+    color: white;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 280px;
+    box-shadow: 0 0 50px rgba(0, 255, 204, 0.3);
 }
 
-.section-text {
-  font-size: 1rem;
-  color: #555;
-  max-width: 600px;
-  margin: 0 auto 2rem;
+h1 {
+    margin: 0;
+    font-size: 32px;
+    color: #00ffcc;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
-.cta-button {
-  display: inline-block;
-  background-color: #6639A6;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+p {
+    font-size: 14px;
+    color: #aaa;
 }
 
-.cta-button:hover {
-  background-color: #522d83;
-  transform: translateY(-2px);
+button {
+    background: #ff0055;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 20px;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: transform 0.1s, background 0.2s;
+    text-transform: uppercase;
 }
 
-.footer {
-  background-color: #f9f9f9;
-  color: #777;
-  padding: 1.5rem;
-  font-size: 0.9rem;
-  border-top: 1px solid #e5e5e5;
+button:hover {
+    background: #ff2277;
+    transform: scale(1.05);
 }
+
+button:active {
+    transform: scale(0.95);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Mobile Controls Hint */
+.controls-hint {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+    pointer-events: none;
+}
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
 `;
 
-const initialJs = `console.log("Welcome to your RunAndDeploy project!");
+const initialJs = `const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-document.querySelector('.cta-button').addEventListener('click', () => {
-  console.log('GitHub link clicked!');
+// Game State
+let gameActive = false;
+let score = 0;
+let highScore = localStorage.getItem('racerHighScore') || 0;
+let speed = 5;
+let gameLoopId;
+let lastTime = 0;
+let frameCount = 0;
+
+// Elements
+const scoreEl = document.getElementById('scoreVal');
+const highScoreEl = document.getElementById('highScoreVal');
+const finalScoreEl = document.getElementById('finalScore');
+const startScreen = document.getElementById('startScreen');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const mobileHint = document.getElementById('mobileHint');
+
+// Road Config
+const laneCount = 3;
+let laneWidth = 100;
+let roadX = 0; // Left offset to center road
+
+// Assets
+const player = {
+    lane: 1, // 0, 1, 2
+    y: 0,
+    width: 50,
+    height: 90,
+    color: '#00ffcc',
+    speedX: 0,
+    x: 0,
+    targetX: 0
+};
+
+let obstacles = [];
+let particles = [];
+let roadMarkers = [];
+
+// Initialize Canvas Size
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // Calculate road dimensions
+    const maxWidth = 450; // Max road width
+    const totalRoadWidth = Math.min(canvas.width * 0.95, maxWidth);
+    laneWidth = totalRoadWidth / laneCount;
+    roadX = (canvas.width - totalRoadWidth) / 2;
+
+    // Set player Y position near bottom
+    player.y = canvas.height - 150;
+    updatePlayerX(true); // Immediate snap
+}
+window.addEventListener('resize', resize);
+resize();
+highScoreEl.innerText = highScore;
+
+// --- INPUT HANDLING ---
+let keys = {};
+
+window.addEventListener('keydown', (e) => {
+    if (!gameActive) return;
+    if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft();
+    if (e.key === 'ArrowRight' || e.key === 'd') moveRight();
 });
+
+// Mobile Touch
+canvas.addEventListener('touchstart', (e) => {
+    if (!gameActive) return;
+    const touchX = e.touches[0].clientX;
+    if (touchX < window.innerWidth / 2) moveLeft();
+    else moveRight();
+    e.preventDefault();
+}, {passive: false});
+
+function moveLeft() {
+    if (player.lane > 0) {
+        player.lane--;
+        updatePlayerX();
+    }
+}
+
+function moveRight() {
+    if (player.lane < laneCount - 1) {
+        player.lane++;
+        updatePlayerX();
+    }
+}
+
+function updatePlayerX(snap = false) {
+    // Calculate center of the target lane
+    player.targetX = roadX + (player.lane * laneWidth) + (laneWidth / 2) - (player.width / 2);
+    if (snap) player.x = player.targetX;
+}
+
+// --- GRAPHICS HELPERS ---
+
+function drawCar(x, y, w, h, color, isPlayer) {
+    ctx.save();
+    
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(x + w/2, y + h - 5, w/2 + 5, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Car Body
+    ctx.fillStyle = color;
+    // Main chassis
+    roundRect(ctx, x, y, w, h, 10);
+    ctx.fill();
+    
+    // Roof / Windshield area
+    ctx.fillStyle = isPlayer ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.6)';
+    let cabinMargin = 6;
+    let cabinY = y + h * 0.25;
+    let cabinH = h * 0.45;
+    roundRect(ctx, x + cabinMargin, cabinY, w - (cabinMargin*2), cabinH, 5);
+    ctx.fill();
+
+    // Lights
+    if (isPlayer) {
+        // Tail lights (Red)
+        ctx.fillStyle = '#ff3333';
+        ctx.fillRect(x + 5, y + h - 5, 10, 5);
+        ctx.fillRect(x + w - 15, y + h - 5, 10, 5);
+        // Headlights (Yellowish) - visually facing up, so technically rear lights are at bottom
+    } else {
+        // Enemy Headlights (downward facing)
+        ctx.fillStyle = '#ffffaa';
+        ctx.fillRect(x + 5, y + h - 5, 10, 8);
+        ctx.fillRect(x + w - 15, y + h - 5, 10, 8);
+    }
+
+    ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function drawRoad() {
+    // Grass
+    ctx.fillStyle = '#1a1a1a'; // Dark background
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Road Surface
+    ctx.fillStyle = '#333';
+    ctx.fillRect(roadX, 0, laneCount * laneWidth, canvas.height);
+
+    // Road Borders
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(roadX - 10, 0, 10, canvas.height);
+    ctx.fillRect(roadX + (laneCount * laneWidth), 0, 10, canvas.height);
+
+    // Lane Markers
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    roadMarkers.forEach(m => {
+        for (let i = 1; i < laneCount; i++) {
+            let lineX = roadX + (i * laneWidth) - 2;
+            ctx.fillRect(lineX, m.y, 4, 40);
+        }
+        m.y += speed;
+        if (m.y > canvas.height) m.y = -50;
+    });
+}
+
+// --- LOGIC ---
+
+function startGame() {
+    score = 0;
+    speed = 8;
+    obstacles = [];
+    particles = [];
+    roadMarkers = [];
+    
+    // Init road markers
+    for(let i=0; i<10; i++) {
+        roadMarkers.push({y: i * 100});
+    }
+
+    scoreEl.innerText = '0';
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    mobileHint.style.display = 'none';
+    
+    player.lane = 1;
+    updatePlayerX(true);
+    
+    gameActive = true;
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+}
+
+function resetGame() {
+    startGame();
+}
+
+function spawnObstacle() {
+    const lanes = [0, 1, 2];
+    // Ensure we don't block all lanes (simple logic: pick 1 or 2 lanes)
+    // Chance to spawn 2 cars at once as difficulty increases
+    let numCars = Math.random() > 0.7 && score > 500 ? 2 : 1;
+    
+    for(let i=0; i<numCars; i++) {
+        if(lanes.length === 0) break;
+        const randIndex = Math.floor(Math.random() * lanes.length);
+        const lane = lanes.splice(randIndex, 1)[0];
+
+        // Check vertical distance from last obstacle to prevent overlap
+        let tooClose = obstacles.some(o => o.y < -100);
+        if (!tooClose) {
+            obstacles.push({
+                lane: lane,
+                x: roadX + (lane * laneWidth) + (laneWidth/2) - 25,
+                y: -150 - (Math.random() * 100), // Start above screen
+                width: 50,
+                height: 90,
+                speed: speed * (0.8 + Math.random() * 0.4), // Slight speed variance
+                color: getRandomCarColor()
+            });
+        }
+    }
+}
+
+function getRandomCarColor() {
+    const colors = ['#ff3333', '#3355ff', '#ffff33', '#aa33ff', '#ff8833', '#ffffff'];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+function createExplosion(x, y, color) {
+    for(let i=0; i<20; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 10,
+            vy: (Math.random() - 0.5) * 10,
+            life: 1.0,
+            color: color
+        });
+    }
+}
+
+function updatePhysics() {
+    // Smooth player movement
+    player.x += (player.targetX - player.x) * 0.2;
+
+    // Spawn obstacles
+    // Rate increases with speed
+    if (Math.random() < 0.02 + (score * 0.00001)) {
+        spawnObstacle();
+    }
+
+    // Move obstacles
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        let obs = obstacles[i];
+        obs.y += speed * 0.8; // Obstacles move slightly slower than road (relative speed illusion)
+
+        // Collision Detection
+        if (rectIntersect(player.x + 5, player.y + 5, player.width - 10, player.height - 10, 
+                          obs.x + 2, obs.y + 2, obs.width - 4, obs.height - 4)) {
+            gameOver(obs);
+            return;
+        }
+
+        // Remove passed obstacles & Score
+        if (obs.y > canvas.height) {
+            obstacles.splice(i, 1);
+            score += 10;
+            scoreEl.innerText = score;
+            
+            // Increase difficulty
+            if (score % 100 === 0) {
+                speed += 0.5;
+            }
+        }
+    }
+
+    // Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.05;
+        if(p.life <= 0) particles.splice(i, 1);
+    }
+}
+
+function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
+    return x2 < x1 + w1 && x2 + w2 > x1 && y2 < y1 + h1 && y2 + h2 > y1;
+}
+
+function draw() {
+    drawRoad();
+
+    // Obstacles
+    obstacles.forEach(obs => {
+        drawCar(obs.x, obs.y, obs.width, obs.height, obs.color, false);
+    });
+
+    // Player
+    drawCar(player.x, player.y, player.width, player.height, player.color, true);
+
+    // Particles
+    particles.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 4, 4);
+        ctx.globalAlpha = 1.0;
+    });
+}
+
+function gameLoop(time) {
+    if (!gameActive) return;
+
+    updatePhysics();
+    draw();
+
+    if (gameActive) {
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+function gameOver(hitCar) {
+    gameActive = false;
+    
+    // Explosion effect
+    createExplosion(player.x + player.width/2, player.y + player.height/2, '#ff0055');
+    createExplosion(hitCar.x + hitCar.width/2, hitCar.y + hitCar.height/2, '#ffffff');
+    
+    // Draw one last frame to show explosion
+    draw();
+
+    // High Score Logic
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('racerHighScore', highScore);
+        highScoreEl.innerText = highScore;
+    }
+
+    // Show Game Over UI
+    finalScoreEl.innerText = score;
+    gameOverScreen.classList.remove('hidden');
+}
+
+// Initial Draw for Menu Background
+resize();
+for(let i=0; i<10; i++) roadMarkers.push({y: i * 100});
+draw();
 `;
 
 type MobileView = 'editor' | 'preview';
@@ -202,7 +609,17 @@ export default function Home() {
   };
 
   useEffect(() => {
-    runCode();
+    const fontLink = document.createElement('link');
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap';
+    fontLink.rel = 'stylesheet';
+    document.head.appendChild(fontLink);
+
+    const timeoutId = setTimeout(runCode, 250);
+
+    return () => {
+        document.head.removeChild(fontLink);
+        clearTimeout(timeoutId);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [htmlCode, cssCode, jsCode]); 
 
