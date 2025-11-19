@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useUser, useFirebase, useCollection } from '@/firebase';
 import { collection, query, where, Timestamp, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
   // 2. Fetch analytics for all sites when they are loaded
-  React.useEffect(() => {
+  useEffect(() => {
     if (sites && sites.length > 0 && firestore) {
       const fetchAnalytics = async () => {
         setIsAnalyticsLoading(true);
