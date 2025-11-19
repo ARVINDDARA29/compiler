@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Expand, Star, MessageSquarePlus, Sparkles } from 'lucide-react';
+import { Copy, Check, Expand, Star, MessageSquarePlus } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -27,14 +27,12 @@ import { useUser, useFirebase } from '@/firebase';
 import { AuthDialog } from '@/components/app/auth-dialog';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
-import { generateCode } from '@/ai/flows/generate-code-flow';
 
-const initialHtml = `<h1>RunAndDeploy</h1>
-<p>By Arvind Bishnoi</p>
+const initialHtml = `<h1>Welcome to Your To-Do List</h1>
 <div class="card">
-  <h2>Welcome!</h2>
-  <p>This is your live code editor. Start building your next idea.</p>
-  <button class="action-button">Get Started</button>
+  <input type="text" id="todo-input" placeholder="Add a new task...">
+  <button id="add-btn">Add Task</button>
+  <ul id="todo-list"></ul>
 </div>
 `;
 
@@ -51,15 +49,10 @@ const initialCss = `body {
 }
 
 h1 {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: #fff;
   letter-spacing: -1px;
-  margin-bottom: 0.5rem;
-}
-
-p {
-  color: #94a3b8;
   margin-bottom: 2rem;
 }
 
@@ -70,22 +63,23 @@ p {
   border-radius: 12px;
   padding: 2rem;
   max-width: 400px;
+  width: 90vw;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-.card h2 {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #fff;
+#todo-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background-color: #0f172a;
+  color: #e2e8f0;
+  font-size: 1rem;
   margin-bottom: 1rem;
+  box-sizing: border-box;
 }
 
-.card p {
-  color: #cbd5e1;
-  margin-bottom: 1.5rem;
-}
-
-.action-button {
+#add-btn {
   background: #38bdf8;
   color: #0f172a;
   border: none;
@@ -95,19 +89,90 @@ p {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+  margin-bottom: 1.5rem;
 }
 
-.action-button:hover {
+#add-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
 }
+
+#todo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+#todo-list li {
+  background: rgba(51, 65, 85, 0.5);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+#todo-list li.completed {
+  text-decoration: line-through;
+  color: #64748b;
+}
+
+#todo-list li:hover {
+  background: rgba(51, 65, 85, 0.8);
+}
+
+#todo-list .delete-btn {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 5px;
+}
 `;
 
-const initialJs = `const button = document.querySelector('.action-button');
+const initialJs = `const todoInput = document.getElementById('todo-input');
+const addBtn = document.getElementById('add-btn');
+const todoList = document.getElementById('todo-list');
 
-button.addEventListener('click', () => {
-  alert('Welcome to RunAndDeploy! Start editing the code to see your changes.');
+addBtn.addEventListener('click', addTodo);
+todoInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        addTodo();
+    }
 });
+
+function addTodo() {
+    const todoText = todoInput.value.trim();
+    if (todoText !== '') {
+        const li = document.createElement('li');
+        
+        const span = document.createElement('span');
+        span.textContent = todoText;
+        li.appendChild(span);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '×';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.addEventListener('click', function() {
+            todoList.removeChild(li);
+        });
+        li.appendChild(deleteBtn);
+        
+        li.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'BUTTON') {
+                li.classList.toggle('completed');
+            }
+        });
+        
+        todoList.appendChild(li);
+        todoInput.value = '';
+    }
+}
 `;
 
 type MobileView = 'editor' | 'preview';
@@ -142,11 +207,6 @@ export default function Home() {
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState('');
   const [lastDeployedProject, setLastDeployedProject] = useState('');
-  
-  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
-
 
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -382,45 +442,6 @@ export default function Home() {
         setLastDeployedProject('');
     }
   };
-
-  const handleGenerateCode = async () => {
-    if (!aiPrompt) {
-      toast({
-        variant: 'destructive',
-        title: 'Prompt is empty',
-        description: 'Please describe the code you want to generate.',
-      });
-      return;
-    }
-    setIsGeneratingCode(true);
-    setIsAiDialogOpen(false);
-
-    toast({
-      title: 'Generating Code...',
-      description: 'The AI is thinking. This might take a moment.',
-    });
-
-    try {
-      const result = await generateCode({ prompt: aiPrompt });
-      setHtmlCode(result.html);
-      setCssCode(result.css);
-      setJsCode(result.js);
-      toast({
-        title: 'Code Generation Successful!',
-        description: 'The generated code has been added to the editor.',
-      });
-    } catch (error) {
-      console.error('AI code generation failed:', error);
-      toast({
-        variant: 'destructive',
-        title: 'AI Generation Failed',
-        description: error instanceof Error ? error.message : 'An unexpected error occurred.',
-      });
-    } finally {
-      setIsGeneratingCode(false);
-      setAiPrompt('');
-    }
-  };
   
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -511,7 +532,6 @@ export default function Home() {
               setCssCode={setCssCode}
               jsCode={jsCode}
               setJsCode={setJsCode}
-              onOpenAiDialog={() => setIsAiDialogOpen(true)}
             />
           </div>
 
@@ -644,39 +664,6 @@ export default function Home() {
             </Button>
             <Button type="button" onClick={handleFeedbackSubmit}>
               Submit Feedback
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>AI Assistant</DialogTitle>
-            <DialogDescription>
-              Describe the component or website you want to build. The AI will generate the HTML, CSS, and JavaScript for you.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Textarea
-              id="ai-prompt"
-              placeholder="e.g., a responsive pricing table with three tiers, a sign-up form with validation, a simple portfolio gallery..."
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              className="min-h-[120px]"
-            />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setIsAiDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleGenerateCode} disabled={isGeneratingCode || !aiPrompt}>
-              {isGeneratingCode ? (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : 'Generate Code'}
             </Button>
           </DialogFooter>
         </DialogContent>

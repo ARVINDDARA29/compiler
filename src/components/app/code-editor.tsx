@@ -1,10 +1,9 @@
+
 'use client';
 
 import type { FC } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Sparkles } from 'lucide-react';
 
 interface CodeEditorProps {
   htmlCode: string;
@@ -13,7 +12,6 @@ interface CodeEditorProps {
   setCssCode: (code: string) => void;
   jsCode: string;
   setJsCode: (code: string) => void;
-  onOpenAiDialog: () => void;
 }
 
 const CodeEditor: FC<CodeEditorProps> = ({
@@ -23,7 +21,6 @@ const CodeEditor: FC<CodeEditorProps> = ({
   setCssCode,
   jsCode,
   setJsCode,
-  onOpenAiDialog,
 }) => {
   return (
     <Tabs defaultValue="html" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
@@ -33,10 +30,6 @@ const CodeEditor: FC<CodeEditorProps> = ({
           <TabsTrigger value="css">CSS</TabsTrigger>
           <TabsTrigger value="js">JavaScript</TabsTrigger>
         </TabsList>
-        <Button variant="ghost" size="sm" onClick={onOpenAiDialog}>
-          <Sparkles className="mr-2 h-4 w-4" />
-          AI Assistant
-        </Button>
       </div>
       <TabsContent value="html" className="flex-1 overflow-y-auto mt-0">
         <Textarea
