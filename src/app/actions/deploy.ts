@@ -13,6 +13,7 @@ const schema = z.object({
   js: z.string(),
   projectName: z.string().min(1, 'Project name is required.'),
   addWatermark: z.boolean(),
+  enableAnalytics: z.boolean(),
 });
 
 type DeployResult = {
@@ -30,7 +31,7 @@ async function getGitHubToken(): Promise<string> {
 }
 
 
-export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string, addWatermark: boolean }): Promise<DeployResult> {
+export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string, addWatermark: boolean, enableAnalytics: boolean }): Promise<DeployResult> {
   const validation = schema.safeParse(data);
   if (!validation.success) {
     const formattedErrors = validation.error.format();
@@ -38,7 +39,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     return { success: false, error: errorMessage };
   }
 
-  const { html, css, js, projectName, addWatermark } = validation.data;
+  const { html, css, js, projectName, addWatermark, enableAnalytics } = validation.data;
   
   let GITHUB_TOKEN = '';
   try {
@@ -79,11 +80,17 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     }
   `
     : '';
+    
+  const analyticsScript = enableAnalytics
+    ? `
+    <script async defer src="https://runanddeploy.netlify.app/track.js" data-site-id="${projectName}"></script>
+    `
+    : '';
   
   const isFullHtml = html.trim().toLowerCase().startsWith('<!doctype html>') || html.trim().toLowerCase().startsWith('<html>');
   
   const fileContent = isFullHtml 
-    ? html // If it's a full HTML file, use it directly.
+    ? html.replace('</body>', `${analyticsScript}</body>`)
     : `
 <!DOCTYPE html>
 <html lang="en">
@@ -102,6 +109,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
   <script>
     ${js}
   </script>
+  ${analyticsScript}
 </body>
 </html>
   `.trim();
@@ -111,7 +119,6 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
 
   try {
     // 1. Check if file exists to get its SHA
-    let existingFileSha: string | undefined;
     const getFileRes = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -124,17 +131,13 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
 
     if (getFileRes.ok) {
         const fileData = await getFileRes.json();
-        // If we are here, the file exists, which means the name is already in use.
-        // GitHub's create/update API would normally just update it,
-        // but the user requirement is to show an error for uniqueness.
         return { success: false, error: 'This name is already in use.' };
     } else if (getFileRes.status !== 404) {
-      // Handle other errors during the check
       const errorData = await getFileRes.json();
       throw new Error(`Failed to check for existing file: ${errorData.message || getFileRes.statusText}`);
     }
     
-    // 2. Create the file (since it's a 404, we know it's a new file)
+    // 2. Create the file
     const putFileRes = await fetch(apiUrl, {
       method: 'PUT',
       headers: {

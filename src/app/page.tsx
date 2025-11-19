@@ -181,7 +181,6 @@ export default function Home() {
   const [htmlCode, setHtmlCode] = useState(initialHtml);
   const [cssCode, setCssCode] = useState(initialCss);
   const [jsCode, setJsCode] = useState(initialJs);
-
   const [srcDoc, setSrcDoc] = useState('');
   
   const [isDeploying, setIsDeploying] = useState(false);
@@ -190,17 +189,17 @@ export default function Home() {
   
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
+  const [enableAnalytics, setEnableAnalytics] = useState(true);
 
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(50);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   
   const [isFullScreenPreviewOpen, setIsFullScreenPreviewOpen] = useState(false);
-
   const [mobileView, setMobileView] = useState<MobileView>('editor');
-
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
@@ -213,9 +212,9 @@ export default function Home() {
   const { user } = useUser();
   const { firestore } = useFirebase();
 
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  const generateSrcDoc = () => {
+  const generateSrcDoc = (forceFullRender = false) => {
+    // If we're forcing a render, we can use a key or other mechanism if needed,
+    // but regenerating the content itself is the main goal.
     const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
     if (isFullHtml) {
         return htmlCode;
@@ -234,7 +233,13 @@ export default function Home() {
   };
   
   const runCode = () => {
-    setSrcDoc(generateSrcDoc());
+    // Forcing re-render by briefly setting to empty string.
+    setSrcDoc(''); 
+    setTimeout(() => {
+        const newSrcDoc = generateSrcDoc(true);
+        setSrcDoc(newSrcDoc);
+    }, 0);
+    
     if (isMobile) {
         setMobileView('preview');
     }
@@ -242,7 +247,10 @@ export default function Home() {
 
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => setSrcDoc(generateSrcDoc()), 250);
+    const timeoutId = setTimeout(() => {
+        const newSrcDoc = generateSrcDoc();
+        setSrcDoc(newSrcDoc);
+    }, 250);
     return () => clearTimeout(timeoutId);
   }, [htmlCode, cssCode, jsCode]);
 
@@ -334,6 +342,7 @@ export default function Home() {
       js: isFullHtml ? '' : jsCode,
       projectName,
       addWatermark,
+      enableAnalytics,
     });
     
     const timerPromise = new Promise(resolve => setTimeout(resolve, 45000));
@@ -397,6 +406,7 @@ export default function Home() {
       setIsDeploying(false);
       setProjectName('');
       setAddWatermark(true);
+      setEnableAnalytics(true);
     }
   };
 
@@ -601,6 +611,21 @@ export default function Home() {
                 />
                 <Label htmlFor="watermark" className="text-sm font-normal text-muted-foreground">
                   Add "RunAndDeploy" watermark
+                </Label>
+              </div>
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+               <Label htmlFor="analytics" className="text-right">
+                Analytics
+              </Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <Switch
+                  id="analytics"
+                  checked={enableAnalytics}
+                  onCheckedChange={setEnableAnalytics}
+                />
+                <Label htmlFor="analytics" className="text-sm font-normal text-muted-foreground">
+                  Enable anonymous analytics
                 </Label>
               </div>
             </div>
