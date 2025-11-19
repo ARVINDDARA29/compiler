@@ -29,168 +29,84 @@ import { collection, doc, setDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
 import { generateCode } from '@/ai/flows/generate-code-flow';
 
-const initialHtml = `<div class="container">
-  <h1>My To-Do List</h1>
-  <p>Created with RunAndDeploy</p>
-  <div class="input-container">
-    <input type="text" id="todo-input" placeholder="Add a new task...">
-    <button id="add-btn">Add</button>
-  </div>
-  <ul id="todo-list"></ul>
-</div>`;
+const initialHtml = `<h1>RunAndDeploy</h1>
+<p>By Arvind Bishnoi</p>
+<div class="card">
+  <h2>Welcome!</h2>
+  <p>This is your live code editor. Start building your next idea.</p>
+  <button class="action-button">Get Started</button>
+</div>
+`;
 
 const initialCss = `body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: #f4f7f9;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #e2e8f0;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   min-height: 100vh;
   margin: 0;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.container {
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 500px;
   text-align: center;
 }
 
 h1 {
-  color: #333;
-  margin-bottom: 8px;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -1px;
+  margin-bottom: 0.5rem;
 }
 
 p {
-  color: #888;
-  font-size: 14px;
-  margin-top: 0;
-  margin-bottom: 24px;
+  color: #94a3b8;
+  margin-bottom: 2rem;
 }
 
-.input-container {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+.card {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-#todo-input {
-  flex-grow: 1;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  outline: none;
-  transition: border-color 0.2s;
+.card h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 1rem;
 }
 
-#todo-input:focus {
-  border-color: #4a90e2;
+.card p {
+  color: #cbd5e1;
+  margin-bottom: 1.5rem;
 }
 
-#add-btn {
-  padding: 0 20px;
-  background-color: #4a90e2;
-  color: white;
+.action-button {
+  background: #38bdf8;
+  color: #0f172a;
   border: none;
   border-radius: 8px;
-  font-size: 16px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-#add-btn:hover {
-  background-color: #357abd;
-}
-
-#todo-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  text-align: left;
-}
-
-#todo-list li {
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: background-color 0.2s;
-}
-
-#todo-list li.completed {
-  text-decoration: line-through;
-  color: #aaa;
-  background-color: #f0f0f0;
-}
-
-.delete-btn {
-  background-color: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 5px 10px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.delete-btn:hover {
-  background-color: #c0392b;
+.action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
 }
 `;
 
-const initialJs = `const todoInput = document.getElementById('todo-input');
-const addBtn = document.getElementById('add-btn');
-const todoList = document.getElementById('todo-list');
+const initialJs = `const button = document.querySelector('.action-button');
 
-function addTask() {
-  const taskText = todoInput.value.trim();
-  if (taskText === '') {
-    alert('Please enter a task!');
-    return;
-  }
-
-  const li = document.createElement('li');
-  
-  const taskSpan = document.createElement('span');
-  taskSpan.textContent = taskText;
-  li.appendChild(taskSpan);
-
-  const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = 'Delete';
-  deleteBtn.className = 'delete-btn';
-  li.appendChild(deleteBtn);
-
-  todoList.appendChild(li);
-  todoInput.value = '';
-
-  // Event listener for toggling completion
-  taskSpan.addEventListener('click', () => {
-    li.classList.toggle('completed');
-  });
-
-  // Event listener for deleting a task
-  deleteBtn.addEventListener('click', () => {
-    todoList.removeChild(li);
-  });
-}
-
-addBtn.addEventListener('click', addTask);
-
-// Allow pressing Enter to add a task
-todoInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    addTask();
-  }
+button.addEventListener('click', () => {
+  alert('Welcome to RunAndDeploy! Start editing the code to see your changes.');
 });
 `;
 
@@ -259,15 +175,13 @@ export default function Home() {
       }
     };
 
-    // Force iframe to reload by setting srcDoc to empty first
-    if(iframeRef.current) {
-        iframeRef.current.srcdoc = '';
+    if (iframeRef.current) {
+      iframeRef.current.srcdoc = '';
     }
-    // Use a short timeout to allow the DOM to update
     setTimeout(() => {
-        if(iframeRef.current) {
-            iframeRef.current.srcdoc = getCode();
-        }
+      if (iframeRef.current) {
+        iframeRef.current.srcdoc = getCode();
+      }
     }, 50);
 
     if (isMobile) {
@@ -279,7 +193,6 @@ export default function Home() {
   useEffect(() => {
     const timeoutId = setTimeout(runCode, 250);
     return () => clearTimeout(timeoutId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [htmlCode, cssCode, jsCode]); 
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -358,9 +271,9 @@ export default function Home() {
     const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
 
     const deploymentPromise = deployToGithub({
-      html: isFullHtml ? htmlCode : htmlCode, // Pass full html if it is
-      css: isFullHtml ? '' : cssCode, // Pass empty if full html
-      js: isFullHtml ? '' : jsCode,   // Pass empty if full html
+      html: isFullHtml ? htmlCode : htmlCode,
+      css: isFullHtml ? '' : cssCode,
+      js: isFullHtml ? '' : jsCode,
       projectName,
       addWatermark,
     });
@@ -470,11 +383,43 @@ export default function Home() {
     }
   };
 
-  const handleAiButtonClick = () => {
+  const handleGenerateCode = async () => {
+    if (!aiPrompt) {
+      toast({
+        variant: 'destructive',
+        title: 'Prompt is empty',
+        description: 'Please describe the code you want to generate.',
+      });
+      return;
+    }
+    setIsGeneratingCode(true);
+    setIsAiDialogOpen(false);
+
     toast({
-        title: 'AI Assistant',
-        description: 'Coming soon!',
+      title: 'Generating Code...',
+      description: 'The AI is thinking. This might take a moment.',
     });
+
+    try {
+      const result = await generateCode({ prompt: aiPrompt });
+      setHtmlCode(result.html);
+      setCssCode(result.css);
+      setJsCode(result.js);
+      toast({
+        title: 'Code Generation Successful!',
+        description: 'The generated code has been added to the editor.',
+      });
+    } catch (error) {
+      console.error('AI code generation failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'AI Generation Failed',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsGeneratingCode(false);
+      setAiPrompt('');
+    }
   };
   
   const handleImportClick = () => {
@@ -525,7 +470,6 @@ export default function Home() {
         }
     });
 
-    // Reset the input value to allow importing the same file again
     e.target.value = '';
   };
   
@@ -567,7 +511,7 @@ export default function Home() {
               setCssCode={setCssCode}
               jsCode={jsCode}
               setJsCode={setJsCode}
-              onOpenAiDialog={handleAiButtonClick}
+              onOpenAiDialog={() => setIsAiDialogOpen(true)}
             />
           </div>
 
@@ -700,6 +644,39 @@ export default function Home() {
             </Button>
             <Button type="button" onClick={handleFeedbackSubmit}>
               Submit Feedback
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>AI Assistant</DialogTitle>
+            <DialogDescription>
+              Describe the component or website you want to build. The AI will generate the HTML, CSS, and JavaScript for you.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Textarea
+              id="ai-prompt"
+              placeholder="e.g., a responsive pricing table with three tiers, a sign-up form with validation, a simple portfolio gallery..."
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              className="min-h-[120px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setIsAiDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleGenerateCode} disabled={isGeneratingCode || !aiPrompt}>
+              {isGeneratingCode ? (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : 'Generate Code'}
             </Button>
           </DialogFooter>
         </DialogContent>
