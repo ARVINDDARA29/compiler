@@ -1,7 +1,6 @@
 'use client';
 
-import { forwardRef, useEffect } from 'react';
-import type { FC } from 'react';
+import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface LivePreviewProps {
@@ -11,32 +10,6 @@ interface LivePreviewProps {
 
 const LivePreview = forwardRef<HTMLIFrameElement, LivePreviewProps>(
   ({ srcDoc, isFullScreen = false }, ref) => {
-    
-    useEffect(() => {
-      const iframe = (ref as React.RefObject<HTMLIFrameElement>)?.current;
-      if (!iframe) return;
-
-      const handleLoad = () => {
-        const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
-        if (iframeDocument) {
-          const stopPropagation = (e: Event) => e.stopPropagation();
-          iframeDocument.addEventListener('click', stopPropagation, true);
-        }
-      };
-      
-      iframe.addEventListener('load', handleLoad);
-
-      return () => {
-        iframe.removeEventListener('load', handleLoad);
-        const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
-        if (iframeDocument) {
-            const stopPropagation = (e: Event) => e.stopPropagation();
-            iframeDocument.removeEventListener('click', stopPropagation, true);
-        }
-      };
-    }, [srcDoc, ref]);
-
-
     return (
       <div className={cn(
           "flex h-full flex-col overflow-hidden bg-card items-center justify-center",
