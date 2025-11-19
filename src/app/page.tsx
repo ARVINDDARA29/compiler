@@ -215,35 +215,26 @@ export default function Home() {
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const runCode = () => {
-    const getCode = () => {
-      const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
-      if (isFullHtml) {
-          return htmlCode;
-      } else {
-          return `
-              <html>
-                  <head>
-                      <style>${cssCode}</style>
-                  </head>
-                  <body>
-                      ${htmlCode}
-                      <script>${jsCode}</script>
-                  </body>
-              </html>
-          `;
-      }
-    };
-
-    if (iframeRef.current) {
-      iframeRef.current.srcdoc = '';
+  const generateSrcDoc = () => {
+    const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
+    if (isFullHtml) {
+        return htmlCode;
     }
-    setTimeout(() => {
-      if (iframeRef.current) {
-        iframeRef.current.srcdoc = getCode();
-      }
-    }, 50);
-
+    return `
+        <html>
+            <head>
+                <style>${cssCode}</style>
+            </head>
+            <body>
+                ${htmlCode}
+                <script>${jsCode}</script>
+            </body>
+        </html>
+    `;
+  };
+  
+  const runCode = () => {
+    setSrcDoc(generateSrcDoc());
     if (isMobile) {
         setMobileView('preview');
     }
@@ -251,9 +242,16 @@ export default function Home() {
 
 
   useEffect(() => {
-    const timeoutId = setTimeout(runCode, 250);
+    const timeoutId = setTimeout(() => setSrcDoc(generateSrcDoc()), 250);
     return () => clearTimeout(timeoutId);
-  }, [htmlCode, cssCode, jsCode]); 
+  }, [htmlCode, cssCode, jsCode]);
+
+  useEffect(() => {
+    if (isFullScreenPreviewOpen) {
+      setSrcDoc(generateSrcDoc());
+    }
+  }, [isFullScreenPreviewOpen]);
+
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isMobile) return;
