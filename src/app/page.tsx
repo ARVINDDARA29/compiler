@@ -236,6 +236,8 @@ export default function Home() {
   const { user } = useUser();
   const { firestore } = useFirebase();
 
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
   const runCode = () => {
     const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
     
@@ -529,7 +531,7 @@ export default function Home() {
                   </Button>
                 </div>
                 <TabsContent value="preview" className="flex-1 overflow-auto bg-white mt-0">
-                    <LivePreview srcDoc={srcDoc} />
+                    <LivePreview srcDoc={srcDoc} ref={iframeRef} />
                 </TabsContent>
               </Tabs>
             </div>
