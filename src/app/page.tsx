@@ -237,21 +237,30 @@ export default function Home() {
   const { firestore } = useFirebase();
 
   const runCode = () => {
-    setSrcDoc(`
-      <html>
-        <head>
-          <style>${cssCode}</style>
-        </head>
-        <body>
-          ${htmlCode}
-          <script>${jsCode}</script>
-        </body>
-      </html>
-    `);
-    if (isMobile) {
-      setMobileView('preview');
+    const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
+    
+    if (isFullHtml) {
+        // If it's a full HTML document, use it as is.
+        setSrcDoc(htmlCode);
+    } else {
+        // Otherwise, build it from the separate code sections.
+        setSrcDoc(`
+            <html>
+                <head>
+                    <style>${cssCode}</style>
+                </head>
+                <body>
+                    ${htmlCode}
+                    <script>${jsCode}</script>
+                </body>
+            </html>
+        `);
     }
-  };
+
+    if (isMobile) {
+        setMobileView('preview');
+    }
+};
 
   useEffect(() => {
     const fontLink = document.createElement('link');
@@ -341,10 +350,12 @@ export default function Home() {
       description: "Your site will be ready in about 45 seconds. If it's not live after a minute, try refreshing the page.",
     });
 
+    const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
+
     const deploymentPromise = deployToGithub({
-      html: htmlCode,
-      css: cssCode,
-      js: jsCode,
+      html: isFullHtml ? htmlCode : htmlCode, // Pass full html if it is
+      css: isFullHtml ? '' : cssCode, // Pass empty if full html
+      js: isFullHtml ? '' : jsCode,   // Pass empty if full html
       projectName,
       addWatermark,
     });
@@ -631,7 +642,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    

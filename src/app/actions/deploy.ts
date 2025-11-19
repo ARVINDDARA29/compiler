@@ -79,8 +79,12 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     }
   `
     : '';
-
-  const fileContent = `
+  
+  const isFullHtml = html.trim().toLowerCase().startsWith('<!doctype html>') || html.trim().toLowerCase().startsWith('<html>');
+  
+  const fileContent = isFullHtml 
+    ? html // If it's a full HTML file, use it directly.
+    : `
 <!DOCTYPE html>
 <html lang="en">
 <head>
