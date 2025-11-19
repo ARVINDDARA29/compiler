@@ -24,21 +24,31 @@ export default function MySitesPage() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
 
-  // Create a memoized query to fetch sites for the current user
+  // Create a memoized query to fetch sites for the current user, ordered by most recent
   const sitesQuery = useMemo(() => {
     if (!firestore || !user) return null;
-    // The orderBy clause was removed to prevent a missing-index error.
-    // To re-enable sorting, create the composite index in your Firebase console.
+    // NOTE: This query requires a composite index in Firestore.
+    // If you see a permission error, the console will provide a link to create it.
+    // Index: collection=sites, fields: userId (asc), deployedAt (desc)
     return query(
       collection(firestore, 'sites'),
-      where('userId', '==', user.uid)
+      where('userId', '==', user.uid),
+      orderBy('deployedAt', 'desc')
     );
   }, [firestore, user]);
 
   // Use the useCollection hook to get real-time data
   const { data: sites, isLoading: isSitesLoading, error } = useCollection<DeployedSite>(sitesQuery);
 
-  const isLoading = isUserLoading || isSitesLoading;
+  // Memoize the sorted sites to prevent re-sorting on every render
+  const sortedSites = useMemo(() => {
+    if (!sites) return [];
+    // The query should sort, but as a fallback, we sort on the client.
+    return [...sites].sort((a, b) => b.deployedAt.toMillis() - a.deployedAt.toMillis());
+  }, [sites]);
+
+
+  const isLoading = isUserLoading || (isSitesLoading && !sites);
 
   if (isLoading) {
     return <SitesPageSkeleton />;
@@ -46,11 +56,11 @@ export default function MySitesPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background text-center">
+      <div className="flex flex-col items-center justify-center h-screen bg-background text-center p-4">
         <ServerCrash className="h-16 w-16 text-destructive mb-4" />
         <h1 className="text-2xl font-bold">Something went wrong</h1>
-        <p className="text-muted-foreground mb-6">We couldn't load your sites. Please try again later.</p>
-        <p className="text-sm text-muted-foreground/50">{error.message}</p>
+        <p className="text-muted-foreground mb-6 max-w-md">We couldn't load your sites. This often happens if a required Firestore index is missing.</p>
+        <p className="text-sm text-muted-foreground/50 break-all max-w-full">{error.message}</p>
         <Button asChild variant="outline" className="mt-4">
           <Link href="/">
             <Home className="mr-2 h-4 w-4" /> Go back Home
@@ -84,9 +94,9 @@ export default function MySitesPage() {
             </Button>
         </div>
 
-        {sites && sites.length > 0 ? (
+        {sortedSites && sortedSites.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sites.map((site) => (
+            {sortedSites.map((site) => (
               <Card key={site.id} className="flex flex-col">
                 <CardHeader>
                   <CardTitle className="truncate">{site.projectName}</CardTitle>
