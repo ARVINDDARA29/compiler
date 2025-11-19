@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 import { useUser, useFirebase, useCollection } from '@/firebase';
-import { collection, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Home, Loader2, ServerCrash } from 'lucide-react';
@@ -24,16 +24,12 @@ export default function MySitesPage() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
 
-  // Create a memoized query to fetch sites for the current user, ordered by most recent
+  // Create a memoized query to fetch sites for the current user.
   const sitesQuery = useMemo(() => {
     if (!firestore || !user) return null;
-    // NOTE: This query requires a composite index in Firestore.
-    // If you see a permission error, the console will provide a link to create it.
-    // Index: collection=sites, fields: userId (asc), deployedAt (desc)
     return query(
       collection(firestore, 'sites'),
-      where('userId', '==', user.uid),
-      orderBy('deployedAt', 'desc')
+      where('userId', '==', user.uid)
     );
   }, [firestore, user]);
 
@@ -43,7 +39,7 @@ export default function MySitesPage() {
   // Memoize the sorted sites to prevent re-sorting on every render
   const sortedSites = useMemo(() => {
     if (!sites) return [];
-    // The query should sort, but as a fallback, we sort on the client.
+    // Sort on the client-side to avoid needing a composite index in Firestore
     return [...sites].sort((a, b) => b.deployedAt.toMillis() - a.deployedAt.toMillis());
   }, [sites]);
 
@@ -59,7 +55,7 @@ export default function MySitesPage() {
       <div className="flex flex-col items-center justify-center h-screen bg-background text-center p-4">
         <ServerCrash className="h-16 w-16 text-destructive mb-4" />
         <h1 className="text-2xl font-bold">Something went wrong</h1>
-        <p className="text-muted-foreground mb-6 max-w-md">We couldn't load your sites. This often happens if a required Firestore index is missing.</p>
+        <p className="text-muted-foreground mb-6 max-w-md">We couldn't load your sites. This can sometimes happen due to a network or permissions issue.</p>
         <p className="text-sm text-muted-foreground/50 break-all max-w-full">{error.message}</p>
         <Button asChild variant="outline" className="mt-4">
           <Link href="/">
