@@ -1,18 +1,23 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { z } from 'zod';
-import { firebaseConfig } from '@/firebase/config';
+
 
 // Initialize Firebase Admin SDK
-// This ensures that we can write to Firestore from the server-side.
 if (!getApps().length) {
-  initializeApp({
-    // We use the client-side config here as we don't have service account credentials
-    // in this secure serverless environment. Firestore rules will protect our database.
-    projectId: firebaseConfig.projectId
-  });
+    try {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!);
+        initializeApp({
+            credential: cert(serviceAccount)
+        });
+    } catch (e) {
+        console.error("Failed to initialize Firebase Admin SDK:", e);
+        // Fallback for environments where service account isn't set,
+        // though writes will likely fail due to permissions.
+        initializeApp();
+    }
 }
 
 const db = getFirestore();
@@ -28,19 +33,20 @@ const analyticsSchema = z.object({
  * @param {NextRequest} req - The incoming request object.
  */
 export async function POST(req: NextRequest) {
+  // Add CORS headers to allow requests from any origin
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json',
+  };
+
+  // Respond to preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    return new NextResponse(null, { status: 204, headers });
+  }
+
   try {
-    // Add CORS headers to allow requests from any origin
-    const headers = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    };
-
-    // Respond to preflight OPTIONS requests
-    if (req.method === 'OPTIONS') {
-      return new NextResponse(null, { status: 204, headers });
-    }
-
     const body = await req.json();
     const validation = analyticsSchema.safeParse(body);
 
@@ -53,12 +59,13 @@ export async function POST(req: NextRequest) {
 
     const { siteId, path, userAgent } = validation.data;
 
+    // Use a randomly generated ID for the new document
     const eventRef = db.collection('analytics').doc();
     await eventRef.set({
       siteId,
       path,
       userAgent,
-      timestamp: new Date(),
+      timestamp: new Date(), // Use server timestamp for accuracy
     });
 
     return new NextResponse(JSON.stringify({ success: true }), {
@@ -67,14 +74,22 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error tracking analytics:', error);
+    // Ensure CORS headers are also sent on error responses
     return new NextResponse(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers,
     });
   }
 }
 
 // Handler for GET requests to show a simple message or documentation
 export async function GET(req: NextRequest) {
-  return NextResponse.json({ message: 'Analytics tracking endpoint. Use POST to submit data.' });
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+    };
+    return new NextResponse(JSON.stringify({ message: 'Analytics tracking endpoint. Use POST to submit data.' }), {
+        status: 200,
+        headers
+    });
 }

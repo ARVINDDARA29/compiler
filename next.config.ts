@@ -44,7 +44,15 @@ const nextConfig: NextConfig = {
         ]
       }
     ]
-  }
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/track.js',
+        destination: '/api/track.js',
+      },
+    ]
+  },
 };
 
 export default nextConfig;

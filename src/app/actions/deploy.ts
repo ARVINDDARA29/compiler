@@ -54,7 +54,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
 
   const watermarkHTML = addWatermark
     ? `
-    <a href="https://runanddeploy.netlify.app" target="_blank" class="runanddeploy-watermark">
+    <a href="https://runanddeploy.web.app" target="_blank" class="runanddeploy-watermark">
       RunAndDeploy
     </a>
   `
@@ -83,7 +83,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     
   const analyticsScript = enableAnalytics
     ? `
-    <script async defer src="https://runanddeploy.netlify.app/track.js" data-site-id="${projectName}"></script>
+    <script async defer src="https://runanddeploy.web.app/track.js" data-site-id="${projectName}"></script>
     `
     : '';
   

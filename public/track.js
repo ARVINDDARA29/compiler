@@ -1,47 +1,46 @@
 
 (function() {
-  // Do not track on localhost or other development environments
+  // Do not track on localhost
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    console.log('Analytics tracking disabled on localhost.');
-    return;
-  }
-  
-  // Find the script tag itself to read the data attributes
-  const scriptTag = document.currentScript;
-  if (!scriptTag) {
-    console.error('Tracking script tag not found.');
-    return;
-  }
-  
-  const siteId = scriptTag.getAttribute('data-site-id');
-  if (!siteId) {
-    console.error('data-site-id not found on tracking script.');
     return;
   }
 
-  const trackingEndpoint = 'https://runanddeploy.netlify.app/api/track';
+  // Find the script tag to get the data-site-id
+  const scriptTag = document.querySelector('script[src$="/track.js"]');
+  if (!scriptTag) {
+    console.error('Analytics script tag not found.');
+    return;
+  }
+
+  const siteId = scriptTag.getAttribute('data-site-id');
+  if (!siteId) {
+    console.error('data-site-id attribute not found on analytics script tag.');
+    return;
+  }
+  
+  // The API endpoint of the main RunAndDeploy application
+  const trackingUrl = 'https://runanddeploy.web.app/api/track';
 
   const data = {
     siteId: siteId,
     path: window.location.pathname,
-    userAgent: navigator.userAgent || 'Unknown',
+    userAgent: navigator.userAgent,
   };
 
-  // Use navigator.sendBeacon if available for reliability on page unload
-  // Otherwise, fall back to a standard fetch request.
+  // Use navigator.sendBeacon if available for reliability, otherwise fallback to fetch
   if (navigator.sendBeacon) {
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-    navigator.sendBeacon(trackingEndpoint, blob);
+    navigator.sendBeacon(trackingUrl, blob);
   } else {
-    fetch(trackingEndpoint, {
+    fetch(trackingUrl, {
       method: 'POST',
+      body: JSON.stringify(data),
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
-      keepalive: true, // helps ensure request is sent on page unload
+      keepalive: true, // Keep the request alive even if the page is unloading
     }).catch(err => {
-      console.error('Failed to send analytics data:', err);
+      console.error('Analytics tracking failed:', err);
     });
   }
 })();
