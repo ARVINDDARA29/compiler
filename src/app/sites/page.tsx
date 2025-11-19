@@ -27,10 +27,11 @@ export default function MySitesPage() {
   // Create a memoized query to fetch sites for the current user
   const sitesQuery = useMemo(() => {
     if (!firestore || !user) return null;
+    // The orderBy clause was removed to prevent a missing-index error.
+    // To re-enable sorting, create the composite index in your Firebase console.
     return query(
       collection(firestore, 'sites'),
-      where('userId', '==', user.uid),
-      orderBy('deployedAt', 'desc')
+      where('userId', '==', user.uid)
     );
   }, [firestore, user]);
 
@@ -90,7 +91,7 @@ export default function MySitesPage() {
                 <CardHeader>
                   <CardTitle className="truncate">{site.projectName}</CardTitle>
                   <CardDescription>
-                    Deployed {formatDistanceToNow(site.deployedAt.toDate(), { addSuffix: true })}
+                    {site.deployedAt ? `Deployed ${formatDistanceToNow(site.deployedAt.toDate(), { addSuffix: true })}` : 'Deployment date not available'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow">
