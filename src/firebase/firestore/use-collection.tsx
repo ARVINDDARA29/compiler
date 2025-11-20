@@ -73,7 +73,6 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (err: FirestoreError) => {
-        console.error("useCollection Firestore Error:", err);
         
         let reportedError: Error = err;
         
