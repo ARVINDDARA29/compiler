@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
 const features = [
+  "Powered by Arvind Dara Bishnoi",
   "Unlimited Free Hosting",
   "Get Unlimited Links",
   "One-Click Deployment",
