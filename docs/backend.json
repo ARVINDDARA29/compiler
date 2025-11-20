@@ -53,27 +53,13 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the site was deployed."
-        },
-        "isPublic": {
-          "type": "boolean",
-          "description": "Whether the site is publicly visible in the showcase."
-        },
-        "imageUrl": {
-          "type": "string",
-          "format": "uri",
-          "description": "URL of the preview image for the showcase."
-        },
-        "likes": {
-          "type": "number",
-          "description": "The number of likes the site has received."
         }
       },
       "required": [
         "userId",
         "projectName",
         "url",
-        "deployedAt",
-        "isPublic"
+        "deployedAt"
       ]
     },
     "Feedback": {
@@ -125,23 +111,6 @@
         }
       },
       "required": ["token"]
-    },
-    "Like": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Like",
-      "description": "Represents a user's like on a specific site.",
-      "type": "object",
-      "properties": {
-        "userId": {
-          "type": "string",
-          "description": "The ID of the user who liked the site."
-        },
-        "siteId": {
-          "type": "string",
-          "description": "The ID of the site that was liked."
-        }
-      },
-      "required": ["userId", "siteId"]
     }
   },
   "auth": {
@@ -189,16 +158,6 @@
             "$ref": "#/backend/entities/GitApi"
           },
           "description": "Stores the GitHub API key. Should be read-only for server-side processes."
-        }
-      },
-      {
-        "path": "/likes/{likeId}",
-        "definition": {
-          "entityName": "Like",
-          "schema": {
-            "$ref": "#/backend/entities/Like"
-          },
-          "description": "Stores a record of a user liking a site to prevent duplicate likes."
         }
       }
     ]

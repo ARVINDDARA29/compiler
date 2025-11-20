@@ -189,9 +189,6 @@ export default function Home() {
   
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
-  const [addToShowcase, setAddToShowcase] = useState(false);
-  const [imageUrl, setImageUrl] = useState('');
-
 
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(50);
@@ -313,15 +310,6 @@ export default function Home() {
       });
       return;
     }
-    
-    if (addToShowcase && !imageUrl) {
-        toast({
-            variant: 'destructive',
-            title: 'Image URL Required',
-            description: 'Please provide an image URL for the showcase.',
-        });
-        return;
-    }
 
     if (!user || !firestore) {
       toast({
@@ -361,9 +349,6 @@ export default function Home() {
           projectName: projectName,
           url: deploymentResult.url,
           deployedAt: new Date(),
-          isPublic: addToShowcase,
-          imageUrl: addToShowcase ? imageUrl : '',
-          likes: 0,
         };
 
         setDoc(newSiteRef, siteData).catch(async (error) => {
@@ -422,8 +407,6 @@ export default function Home() {
       setIsDeploying(false);
       setProjectName('');
       setAddWatermark(true);
-      setAddToShowcase(false);
-      setImageUrl('');
     }
   };
 
@@ -641,35 +624,6 @@ export default function Home() {
                 </Label>
               </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-               <Label htmlFor="showcase" className="text-right">
-                Showcase
-              </Label>
-              <div className="col-span-3 flex items-center space-x-2">
-                <Switch
-                  id="showcase"
-                  checked={addToShowcase}
-                  onCheckedChange={setAddToShowcase}
-                />
-                <Label htmlFor="showcase" className="text-sm font-normal text-muted-foreground">
-                  Add to public showcase
-                </Label>
-              </div>
-            </div>
-            {addToShowcase && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="image-url" className="text-right">
-                        Image URL
-                    </Label>
-                    <Input
-                        id="image-url"
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        className="col-span-3"
-                        placeholder="https://example.com/image.png"
-                    />
-                </div>
-            )}
           </div>
           <DialogFooter>
             <Button type="button" onClick={handleDeploy} disabled={isDeploying || !projectName}>
