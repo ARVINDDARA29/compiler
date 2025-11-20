@@ -7,7 +7,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 export const metadata: Metadata = {
   title: 'RunAndDeploy',
   description: 'A simple HTML, CSS, and JavaScript editor with live preview and one-click deployment to GitHub Pages.',
-  icons: false,
+  icons: null,
 };
 
 export default function RootLayout({
