@@ -7,8 +7,13 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 export const metadata: Metadata = {
   title: 'RunAndDeploy',
   description: 'A simple HTML, CSS, and JavaScript editor with live preview and one-click deployment to GitHub Pages.',
-  icons: {},
 };
+
+// This export is necessary to prevent a Next.js bug related to favicon generation.
+// See: https://github.com/vercel/next.js/issues/54891
+export function generateStaticParams() {
+  return [];
+}
 
 export default function RootLayout({
   children,

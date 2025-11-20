@@ -59,5 +59,14 @@ service cloud.firestore {
       allow get: if true; // Allows the server action to read the token.
       allow list, create, update, delete: if false; // Deny all writes from the client.
     }
+    
+    // Analytics collection
+    // Only allow creation of analytics events from the tracking script.
+    // Reading analytics is handled by the `list` rule below.
+    match /analytics/{eventId} {
+      allow create: if true;
+      allow get, update, delete: if false;
+      allow list: if request.auth != null && request.query.where.size() == 1 && request.query.where[0].field == 'siteId';
+    }
   }
 }
