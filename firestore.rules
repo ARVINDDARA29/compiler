@@ -71,7 +71,7 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       
       // Allow a user to list their own likes.
-      allow list: if request.auth != null && request.query.resource.data.userId == request.auth.uid;
+      allow list: if request.auth != null && request.query.filters.userId == request.auth.uid;
 
       // Nobody can read, update, or delete like documents directly.
       allow get, update, delete: if false;
