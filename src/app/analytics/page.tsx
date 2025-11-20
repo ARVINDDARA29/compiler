@@ -47,6 +47,7 @@ interface AnalyticsEvent {
   path: string;
   userAgent: string;
   timestamp: Timestamp;
+  userId: string;
 }
 
 interface SiteAnalytics {
@@ -86,9 +87,13 @@ export default function AnalyticsPage() {
 
   // 3. Fetch analytics for the *selected* site in real-time
   const analyticsQuery = useMemo(() => {
-    if (!firestore || !selectedSiteProjectName) return null;
-    return query(collection(firestore, 'analytics'), where('siteId', '==', selectedSiteProjectName));
-  }, [firestore, selectedSiteProjectName]);
+    if (!firestore || !selectedSiteProjectName || !user) return null;
+    return query(
+        collection(firestore, 'analytics'), 
+        where('siteId', '==', selectedSiteProjectName),
+        where('userId', '==', user.uid)
+    );
+  }, [firestore, selectedSiteProjectName, user]);
 
   const { data: analyticsEvents, isLoading: isAnalyticsLoading, error: analyticsError } = useCollection<AnalyticsEvent>(analyticsQuery);
 
