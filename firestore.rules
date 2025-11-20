@@ -16,57 +16,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Users can read their own profile, and create/update it.
-    match /users/{userId} {
-      function isOwner() {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      
-      allow get: if isOwner();
-      allow list: if false; 
-
-      allow create: if isOwner() && request.resource.data.id == userId;
-      allow update: if isOwner() && request.resource.data.id == userId;
-      allow delete: if false;
-    }
-    
-    // Deployed sites are in a top-level collection.
-    match /sites/{siteId} {
-      function isSiteOwner() {
-        return request.auth != null && resource.data.userId == request.auth.uid;
-      }
-
-      allow get: if isSiteOwner();
-      // Allow a user to list the sites that they own.
-      allow list: if request.auth != null && request.query.resource.data.userId == request.auth.uid;
-      
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      
-      allow update: if false;
-
-      allow delete: if isSiteOwner();
-    }
-    
-    // Feedback collection
-    // Users can create feedback, but cannot read, update or delete any feedback (including their own).
-    match /feedbacks/{feedbackId} {
-       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-       allow read, update, delete: if false;
-    }
-
-    // GitHub API token storage
-    // Should only be readable by a trusted server process.
-    match /gitapi/{apiId} {
-      allow get: if true; // Allows the server action to read the token.
-      allow list, create, update, delete: if false; // Deny all writes from the client.
-    }
-    
-    // Analytics collection
-    match /analytics/{eventId} {
-      allow create: if true;
-      allow get, update, delete: if false;
-      allow list: if request.auth != null && request.query.resource.data.userId == request.auth.uid;
+    // WARNING: INSECURE RULE
+    // This allows any authenticated user to read and write any data.
+    // This is for debugging purposes only.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
-
