@@ -9,6 +9,7 @@ import { useUser, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import Link from 'next/link';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface AppHeaderProps {
   isDeploying: boolean;
@@ -33,79 +34,107 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, onImport,
   };
   
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 md:px-6">
-      <div className="flex items-center gap-3">
-        <Rocket className="h-6 w-6 text-primary" />
-        <h1 className="text-lg font-semibold md:text-xl font-headline">RunAndDeploy</h1>
-      </div>
-      <div className="flex items-center gap-2">
-        
+    <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-2 md:px-6">
+        <div className="flex items-center gap-2 md:gap-3">
+            <Rocket className="h-6 w-6 text-primary" />
+            <h1 className="text-base font-semibold md:text-xl font-headline">RunAndDeploy</h1>
+        </div>
+        <div className="flex items-center gap-1 md:gap-2">
+            <TooltipProvider delayDuration={0}>
+                {isMobile && mobileView === 'preview' && (
+                    <Button onClick={onSwitchToCode} variant="outline" size="sm" className="flex-shrink-0">
+                        <Code className="md:mr-2 h-4 w-4" />
+                        <span className="hidden md:inline">Code</span>
+                    </Button>
+                )}
+                
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button onClick={onImport} variant="outline" size="sm" className="flex-shrink-0">
+                            <Upload className="md:mr-2 h-4 w-4" />
+                            <span className="hidden md:inline">Import</span>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Import Files</p>
+                    </TooltipContent>
+                </Tooltip>
 
-        {isMobile && mobileView === 'preview' && (
-           <Button onClick={onSwitchToCode} variant="outline" size="sm">
-            <Code className="mr-2 h-4 w-4" />
-            Code
-          </Button>
-        )}
-        <Button onClick={onImport} variant="outline" size="sm">
-          <Upload className="mr-2 h-4 w-4" />
-          Import
-        </Button>
-        <Button onClick={onRun} variant="outline" size="sm">
-          <Play className="mr-2 h-4 w-4" />
-          Run
-        </Button>
-        <Button onClick={onDeploy} disabled={isDeploying} size="sm">
-          {isDeploying ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Deploying...
-            </>
-          ) : (
-            'Deploy'
-          )}
-        </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button onClick={onRun} variant="outline" size="sm" className="flex-shrink-0">
+                            <Play className="md:mr-2 h-4 w-4" />
+                            <span className="hidden md:inline">Run</span>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Run Code</p>
+                    </TooltipContent>
+                </Tooltip>
 
-        {user && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
-                  <AvatarFallback>{user.displayName?.[0]?.toUpperCase() ?? <UserIcon className='h-4 w-4' />}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-               <DropdownMenuItem asChild>
-                  <Link href="/sites">
-                    <LayoutGrid className="mr-2 h-4 w-4" />
-                    <span>My Sites</span>
-                  </Link>
-                </DropdownMenuItem>
-               <DropdownMenuItem onClick={onFeedbackClick}>
-                <MessageSquarePlus className="mr-2 h-4 w-4" />
-                <span>Feedback</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button onClick={onDeploy} disabled={isDeploying} size="sm" className="flex-shrink-0">
+                            {isDeploying ? (
+                                <>
+                                    <Loader2 className="md:mr-2 h-4 w-4 animate-spin" />
+                                    <span className="hidden md:inline">Deploying...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="inline md:hidden">Deploy</span>
+                                    <span className="hidden md:inline">Deploy</span>
+                                </>
+                            )}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {isDeploying ? <p>Deploying...</p> : <p>Deploy Project</p>}
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+
+            {user && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="relative h-8 w-8 rounded-full flex-shrink-0">
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
+                                <AvatarFallback>{user.displayName?.[0]?.toUpperCase() ?? <UserIcon className='h-4 w-4' />}</AvatarFallback>
+                            </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                                <p className="text-xs leading-none text-muted-foreground">
+                                    {user.email}
+                                </p>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <Link href="/sites">
+                                <LayoutGrid className="mr-2 h-4 w-4" />
+                                <span>My Sites</span>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={onFeedbackClick}>
+                            <MessageSquarePlus className="mr-2 h-4 w-4" />
+                            <span>Feedback</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleLogout}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Log out</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
+        </div>
     </header>
   );
 };
 
 export default AppHeader;
+

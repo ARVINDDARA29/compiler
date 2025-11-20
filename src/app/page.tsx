@@ -531,7 +531,7 @@ export default function Home() {
         accept=".html,.css,.js" 
         className="hidden" 
       />
-      <div className="flex flex-col flex-1 h-full overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <main
           ref={containerRef}
           className="flex flex-1 overflow-hidden md:flex-row flex-col"
