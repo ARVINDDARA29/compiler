@@ -189,7 +189,6 @@ export default function Home() {
   
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
-  const [enableAds, setEnableAds] = useState(false);
 
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(50);
@@ -339,7 +338,6 @@ export default function Home() {
           js: isFullHtml ? '' : jsCode,
           projectName,
           addWatermark,
-          enableAds,
       });
 
       if (deploymentResult.success && deploymentResult.url) {
@@ -351,7 +349,6 @@ export default function Home() {
           projectName: projectName,
           url: deploymentResult.url,
           deployedAt: new Date(),
-          enableAds: enableAds,
         };
 
         setDoc(newSiteRef, siteData).catch(async (error) => {
@@ -410,7 +407,6 @@ export default function Home() {
       setIsDeploying(false);
       setProjectName('');
       setAddWatermark(true);
-      setEnableAds(false);
     }
   };
 
@@ -628,26 +624,6 @@ export default function Home() {
                 </Label>
               </div>
             </div>
-             <div className="grid grid-cols-4 items-start gap-4">
-               <Label htmlFor="ads" className="text-right pt-2">
-                Monetize
-              </Label>
-              <div className="col-span-3 flex flex-col space-y-2">
-                <div className='flex items-center space-x-2 pt-2'>
-                    <Switch
-                      id="ads"
-                      checked={enableAds}
-                      onCheckedChange={setEnableAds}
-                    />
-                    <Label htmlFor="ads" className="text-sm font-normal text-muted-foreground">
-                      Enable Ads & Analytics
-                    </Label>
-                </div>
-                 <p className="text-xs text-muted-foreground">
-                    Start earning by showing ads. Rates are approx. $0.36 per 1000 impressions.
-                </p>
-              </div>
-            </div>
           </div>
           <DialogFooter>
             <Button type="button" onClick={handleDeploy} disabled={isDeploying || !projectName}>
@@ -713,5 +689,3 @@ export default function Home() {
       
     </div>
   );
-
-    

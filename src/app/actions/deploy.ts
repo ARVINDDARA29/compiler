@@ -13,7 +13,6 @@ const schema = z.object({
   js: z.string(),
   projectName: z.string().min(1, 'Project name is required.'),
   addWatermark: z.boolean(),
-  enableAds: z.boolean(),
 });
 
 type DeployResult = {
@@ -31,7 +30,7 @@ async function getGitHubToken(): Promise<string> {
 }
 
 
-export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string, addWatermark: boolean, enableAds: boolean }): Promise<DeployResult> {
+export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string, addWatermark: boolean }): Promise<DeployResult> {
   const validation = schema.safeParse(data);
   if (!validation.success) {
     const formattedErrors = validation.error.format();
@@ -39,7 +38,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     return { success: false, error: errorMessage };
   }
 
-  const { html, css, js, projectName, addWatermark, enableAds } = validation.data;
+  const { html, css, js, projectName, addWatermark } = validation.data;
   
   let GITHUB_TOKEN = '';
   try {
@@ -81,19 +80,10 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
   `
     : '';
 
-  const adScripts = enableAds ? `
-    <script async="async" data-cfasync="false" src="//ironendeavour.com/ccc67c8953ab73a5509caefc927e2583/invoke.js"></script>
-    <div id="container-ccc67c8953ab73a5509caefc927e2583"></div>
-    <script type='text/javascript' src='//ironendeavour.com/e1/f6/22/e1f62229260eade549ea1db2a2d4deee.js'></script>
-    <script type='text/javascript' src='//ironendeavour.com/59/3a/6f/593a6fe5e57191563add8155be96c4ed.js'></script>
-    ` : '';
-    
-  const analyticsScript = enableAds ? `<script defer src="/track.js" data-site-id="${projectName}" data-api-host="https://runanddeploy-prod.web.app"></script>` : '';
-
   const isFullHtml = html.trim().toLowerCase().startsWith('<!doctype html>') || html.trim().toLowerCase().startsWith('<html>');
   
   const fileContent = isFullHtml 
-    ? html.replace('</body>', `${adScripts}${analyticsScript}${watermarkHTML}</body>`)
+    ? html.replace('</body>', `${watermarkHTML}</body>`)
     : `
 <!DOCTYPE html>
 <html lang="en">
@@ -108,8 +98,6 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
 </head>
 <body>
   ${html}
-  ${adScripts}
-  ${analyticsScript}
   ${watermarkHTML}
   <script>
     ${js}
@@ -169,5 +157,3 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     return { success: false, error: error instanceof Error ? error.message : 'An unknown error occurred during deployment.' };
   }
 }
-
-    
