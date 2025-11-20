@@ -2,12 +2,12 @@
 'use client';
 
 import type { FC } from 'react';
-import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload } from 'lucide-react';
+import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '../ui/dropdown-menu';
 import Link from 'next/link';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
@@ -34,13 +34,50 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
     }
   };
   
+  const UserMenuItems = () => (
+    <>
+      {user && (
+        <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                    {user.email}
+                </p>
+            </div>
+        </DropdownMenuLabel>
+      )}
+       <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+            <Link href="/sites">
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                <span>My Sites</span>
+            </Link>
+        </DropdownMenuItem>
+         <DropdownMenuItem asChild>
+            <Link href="/analytics">
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                <span>Analytics</span>
+            </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onFeedbackClick}>
+            <MessageSquarePlus className="mr-2 h-4 w-4" />
+            <span>Feedback</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+        </DropdownMenuItem>
+    </>
+  );
+
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-2 md:px-6">
         <div className="flex items-center gap-2 md:gap-3">
             <Rocket className="h-6 w-6 text-primary" />
             <h1 className="text-base font-semibold md:text-xl font-headline">RunAndDeploy</h1>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-1 md:gap-2">
+        <div className="flex items-center justify-end gap-1 md:gap-2">
             <TooltipProvider delayDuration={0}>
                 {isMobile && mobileView === 'preview' && (
                     <Tooltip>
@@ -54,19 +91,21 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                         </TooltipContent>
                     </Tooltip>
                 )}
-                
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button onClick={onImport} variant="outline" size="sm" className="flex-shrink-0">
-                            <Upload className="h-4 w-4 md:mr-2" />
-                            <span className="hidden md:inline">Import</span>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Import Files</p>
-                    </TooltipContent>
-                </Tooltip>
 
+                {!isMobile && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button onClick={onImport} variant="outline" size="sm" className="flex-shrink-0">
+                                <Upload className="h-4 w-4 md:mr-2" />
+                                <span className="hidden md:inline">Import</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Import Files</p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+                
                 <Tooltip>
                     <TooltipTrigger asChild>
                          <Button onClick={onRun} variant="outline" size="sm" className="flex-shrink-0" disabled={isRunning}>
@@ -76,6 +115,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                                 <Play className="h-4 w-4 md:mr-2" />
                             )}
                             <span className="hidden md:inline">{isRunning ? 'Running...' : 'Run'}</span>
+                             {isMobile && <span className="inline md:hidden">Run</span>}
                         </Button>
                     </TooltipTrigger>
                      <TooltipContent>
@@ -89,7 +129,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                             {isDeploying ? (
                                 <>
                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span className="hidden md:inline">Deploying...</span>
+                                    <span className="hidden md:inline ml-2">Deploying...</span>
                                 </>
                             ) : (
                                 <>
@@ -104,7 +144,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                 </Tooltip>
             </TooltipProvider>
 
-            {user && (
+            {user && !isMobile && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-8 w-8 rounded-full flex-shrink-0">
@@ -115,35 +155,34 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56" align="end" forceMount>
-                        <DropdownMenuLabel className="font-normal">
-                            <div className="flex flex-col space-y-1">
-                                <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                                <p className="text-xs leading-none text-muted-foreground">
-                                    {user.email}
-                                </p>
-                            </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                            <Link href="/sites">
-                                <LayoutGrid className="mr-2 h-4 w-4" />
-                                <span>My Sites</span>
-                            </Link>
+                      <UserMenuItems />
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
+
+            {isMobile && (
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9">
+                            <MoreVertical className="h-5 w-5" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuItem onClick={onImport}>
+                             <Upload className="mr-2 h-4 w-4" />
+                            <span>Import Files</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <Link href="/analytics">
-                                <LayoutGrid className="mr-2 h-4 w-4" />
-                                <span>Analytics</span>
-                            </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={onFeedbackClick}>
-                            <MessageSquarePlus className="mr-2 h-4 w-4" />
-                            <span>Feedback</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleLogout}>
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Log out</span>
-                        </DropdownMenuItem>
+                        {user ? (
+                           <UserMenuItems />
+                        ) : (
+                            <>
+                               <DropdownMenuSeparator />
+                               <DropdownMenuItem onClick={onFeedbackClick}>
+                                    <MessageSquarePlus className="mr-2 h-4 w-4" />
+                                    <span>Feedback</span>
+                                </DropdownMenuItem>
+                            </>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             )}
