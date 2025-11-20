@@ -189,7 +189,6 @@ export default function Home() {
   
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
-  const [isPublic, setIsPublic] = useState(false);
 
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(50);
@@ -350,7 +349,7 @@ export default function Home() {
           projectName: projectName,
           url: deploymentResult.url,
           deployedAt: new Date(),
-          isPublic: isPublic,
+          isPublic: false,
         };
 
         setDoc(newSiteRef, siteData).catch(async (error) => {
@@ -409,7 +408,6 @@ export default function Home() {
       setIsDeploying(false);
       setProjectName('');
       setAddWatermark(true);
-      setIsPublic(false);
     }
   };
 
@@ -624,21 +622,6 @@ export default function Home() {
                 />
                 <Label htmlFor="watermark" className="text-sm font-normal text-muted-foreground">
                   Add "RunAndDeploy" watermark
-                </Label>
-              </div>
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-               <Label htmlFor="showcase" className="text-right">
-                Showcase
-              </Label>
-              <div className="col-span-3 flex items-center space-x-2">
-                <Switch
-                  id="showcase"
-                  checked={isPublic}
-                  onCheckedChange={setIsPublic}
-                />
-                <Label htmlFor="showcase" className="text-sm font-normal text-muted-foreground">
-                  Add to public showcase
                 </Label>
               </div>
             </div>
