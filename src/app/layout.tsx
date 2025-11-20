@@ -7,13 +7,8 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 export const metadata: Metadata = {
   title: 'RunAndDeploy',
   description: 'A simple HTML, CSS, and JavaScript editor with live preview and one-click deployment to GitHub Pages.',
+  icons: false,
 };
-
-// This function is added to prevent Next.js from automatically generating a favicon.ico route,
-// which was causing a build error because the file does not exist.
-export async function generateStaticParams() {
-  return [];
-}
 
 export default function RootLayout({
   children,
