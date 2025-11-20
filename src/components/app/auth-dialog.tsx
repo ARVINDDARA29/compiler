@@ -178,5 +178,4 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
       </DialogContent>
     </Dialog>
   );
-
-    
+}
