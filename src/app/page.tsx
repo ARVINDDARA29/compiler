@@ -27,6 +27,7 @@ import { useUser, useFirebase, errorEmitter, FirestorePermissionError } from '@/
 import { AuthDialog } from '@/components/app/auth-dialog';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
+import DeployingOverlay from '@/components/app/deploying-overlay';
 
 const initialHtml = `<h1>Welcome to Your To-Do List</h1>
 <div class="card">
@@ -327,79 +328,75 @@ export default function Home() {
     setIsDeploying(true);
     setIsDeployDialogOpen(false);
 
-    toast({
-      title: 'Deploying Project...',
-      description: "Your site will be ready shortly.",
-    });
-
     const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
 
     try {
-      const deploymentResult = await deployToGithub({
-          html: isFullHtml ? htmlCode : htmlCode,
-          css: isFullHtml ? '' : cssCode,
-          js: isFullHtml ? '' : jsCode,
-          projectName,
-          addWatermark,
-      });
-
-      if (deploymentResult.success && deploymentResult.url) {
-        
-        const sitesCollectionRef = collection(firestore, 'sites');
-        const newSiteRef = doc(sitesCollectionRef, projectName);
-        const siteData = {
-          userId: user.uid,
-          projectName: projectName,
-          url: deploymentResult.url,
-          deployedAt: new Date(),
-          isPublic: false,
-        };
-
-        setDoc(newSiteRef, siteData, { merge: true }).catch(async (error) => {
-            const permissionError = new FirestorePermissionError({
-                path: newSiteRef.path,
-                operation: 'create',
-                requestResourceData: siteData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
+      // Wait for GitHub to build the page
+      setTimeout(async () => {
+        const deploymentResult = await deployToGithub({
+            html: isFullHtml ? htmlCode : htmlCode,
+            css: isFullHtml ? '' : cssCode,
+            js: isFullHtml ? '' : jsCode,
+            projectName,
+            addWatermark,
         });
-        
-        // Wait 45 seconds before showing success, to give GitHub pages time to build
-        await new Promise(resolve => setTimeout(resolve, 45000));
-        
-        setLastDeployedProject(projectName);
 
-        toast({
-          title: 'Deployment Successful!',
-          description: 'Your link is permanent and free forever.',
-          duration: 9000,
-          action: (
-            <div className="flex items-center gap-2">
-              <a href={deploymentResult.url} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm">
-                  View Site
+        if (deploymentResult.success && deploymentResult.url) {
+          
+          const sitesCollectionRef = collection(firestore, 'sites');
+          const newSiteRef = doc(sitesCollectionRef, projectName);
+          const siteData = {
+            userId: user.uid,
+            projectName: projectName,
+            url: deploymentResult.url,
+            deployedAt: new Date(),
+            isPublic: false,
+          };
+
+          setDoc(newSiteRef, siteData, { merge: true }).catch(async (error) => {
+              const permissionError = new FirestorePermissionError({
+                  path: newSiteRef.path,
+                  operation: 'create',
+                  requestResourceData: siteData,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+          });
+          
+          setLastDeployedProject(projectName);
+
+          toast({
+            title: 'Deployment Successful!',
+            description: 'Your link is permanent and free forever.',
+            duration: 9000,
+            action: (
+              <div className="flex items-center gap-2">
+                <a href={deploymentResult.url} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm">
+                    View Site
+                  </Button>
+                </a>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (deploymentResult?.url) {
+                      navigator.clipboard.writeText(deploymentResult.url);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }
+                  }}
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  <span className="sr-only">Copy URL</span>
                 </Button>
-              </a>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (deploymentResult?.url) {
-                    navigator.clipboard.writeText(deploymentResult.url);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                  }
-                }}
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                <span className="sr-only">Copy URL</span>
-              </Button>
-            </div>
-          ),
-        });
-      } else {
-        throw new Error(deploymentResult.error || 'An unknown error occurred during deployment.');
-      }
+              </div>
+            ),
+          });
+        } else {
+          throw new Error(deploymentResult.error || 'An unknown error occurred during deployment.');
+        }
+      }, 45000);
+
     } catch (error) {
       console.error('Deployment failed:', error);
       toast({
@@ -407,10 +404,14 @@ export default function Home() {
         title: 'Deployment Failed',
         description: error instanceof Error ? error.message : 'An unexpected error occurred.',
       });
+      setIsDeploying(false); // Make sure to stop deploying on error
     } finally {
-      setIsDeploying(false);
-      setProjectName('');
-      setAddWatermark(true);
+        if (isDeploying) {
+            // we set it to false only after the timeout completes or fails
+        } else {
+             setProjectName('');
+             setAddWatermark(true);
+        }
     }
   };
 
@@ -517,6 +518,7 @@ export default function Home() {
 
   return (
     <div className="flex h-screen w-screen flex-col bg-background">
+      {isDeploying && <DeployingOverlay />}
       <AppHeader
         isDeploying={isDeploying}
         isRunning={isRunning}
