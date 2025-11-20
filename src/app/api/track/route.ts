@@ -58,6 +58,16 @@ export async function POST(req: NextRequest) {
     }
 
     const { siteId, path, userAgent } = validation.data;
+    
+    // Get the site owner's userId
+    const siteDoc = await db.collection('sites').doc(siteId).get();
+    if (!siteDoc.exists) {
+        return new NextResponse(JSON.stringify({ error: 'Site not found' }), {
+            status: 404,
+            headers,
+        });
+    }
+    const userId = siteDoc.data()?.userId;
 
     // Use a randomly generated ID for the new document
     const eventRef = db.collection('analytics').doc();
@@ -66,6 +76,7 @@ export async function POST(req: NextRequest) {
       path,
       userAgent,
       timestamp: new Date(), // Use server timestamp for accuracy
+      userId: userId || null, // Add the userId to the event
     });
 
     return new NextResponse(JSON.stringify({ success: true }), {
@@ -116,5 +127,4 @@ export async function GET(req: NextRequest) {
         }
     });
 }
-
     

@@ -88,10 +88,10 @@ export default function AnalyticsPage() {
   // 3. Fetch analytics for the *selected* site in real-time
   const analyticsQuery = useMemo(() => {
     if (!firestore || !selectedSiteProjectName || !user) return null;
+    // The security rule now enforces the userId, so we only need to query by siteId
     return query(
         collection(firestore, 'analytics'), 
-        where('siteId', '==', selectedSiteProjectName),
-        where('userId', '==', user.uid)
+        where('siteId', '==', selectedSiteProjectName)
     );
   }, [firestore, selectedSiteProjectName, user]);
 
@@ -267,7 +267,7 @@ export default function AnalyticsPage() {
                ) : (
                    <div className="text-center py-10 border-2 border-dashed rounded-lg">
                         <h3 className="text-lg font-semibold">No Analytics Data Yet</h3>
-                        <p className="text-muted-foreground mt-1">Visit your deployed site to start collecting data for '{selectedSiteProjectName}'.</p>
+                        <p className="text-muted-foreground mt-1">Visit your deployed site to start collecting data for '{selectedSiteProjectname}'.</p>
                     </div>
                )
             )}
@@ -322,9 +322,8 @@ const SiteAnalyticsSkeleton = () => (
                     <Skeleton className="h-5 w-full" />
                     <Skeleton className="h-5 w-4/5" />
                 </CardContent>
-            </Card>
+            </card>
         </div>
     </div>
 );
-
     
