@@ -9,7 +9,6 @@ const features = [
   "One-Click Deployment",
   "Live Previews",
   "HTML, CSS, & JS Editor",
-  "Powered by GitHub Pages",
 ];
 
 const DeployingOverlay = () => {
@@ -25,7 +24,8 @@ const DeployingOverlay = () => {
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
-      <Loader2 className="h-16 w-16 animate-spin text-primary mb-6" />
+      <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+      <h2 className="text-2xl font-semibold text-white mb-4">Deploying...</h2>
       <div className="relative h-6 w-64 overflow-hidden">
         {features.map((feature, index) => (
             <p

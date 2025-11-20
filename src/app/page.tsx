@@ -331,15 +331,20 @@ export default function Home() {
     const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
 
     try {
-      // Wait for GitHub to build the page
-      setTimeout(async () => {
-        const deploymentResult = await deployToGithub({
-            html: isFullHtml ? htmlCode : htmlCode,
-            css: isFullHtml ? '' : cssCode,
-            js: isFullHtml ? '' : jsCode,
-            projectName,
-            addWatermark,
-        });
+      const deploymentResult = await deployToGithub({
+          html: isFullHtml ? htmlCode : htmlCode,
+          css: isFullHtml ? '' : cssCode,
+          js: isFullHtml ? '' : jsCode,
+          projectName,
+          addWatermark,
+      });
+
+      // Wait for GitHub Pages to build and deploy, which can take a minute.
+      // This timeout is an optimistic wait.
+      setTimeout(() => {
+        setIsDeploying(false);
+        setProjectName('');
+        setAddWatermark(true);
 
         if (deploymentResult.success && deploymentResult.url) {
           
@@ -393,7 +398,11 @@ export default function Home() {
             ),
           });
         } else {
-          throw new Error(deploymentResult.error || 'An unknown error occurred during deployment.');
+            toast({
+                variant: 'destructive',
+                title: 'Deployment Failed',
+                description: deploymentResult.error || 'An unknown error occurred during deployment.',
+            });
         }
       }, 45000);
 
@@ -405,13 +414,6 @@ export default function Home() {
         description: error instanceof Error ? error.message : 'An unexpected error occurred.',
       });
       setIsDeploying(false); // Make sure to stop deploying on error
-    } finally {
-        if (isDeploying) {
-            // we set it to false only after the timeout completes or fails
-        } else {
-             setProjectName('');
-             setAddWatermark(true);
-        }
     }
   };
 
