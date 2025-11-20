@@ -53,7 +53,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
 
   const watermarkHTML = addWatermark
     ? `
-    <a href="https://runanddeploy.web.app" target="_blank" class="runanddeploy-watermark">
+    <a href="https://runanddeploy.com" target="_blank" class="runanddeploy-watermark">
       RunAndDeploy
     </a>
   `
