@@ -117,7 +117,10 @@ export default function ShowcasePage() {
             requestResourceData: likeData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        // Don't revert like button state here as updateDoc might still succeed.
+        // Don't revert like button state here as updateDoc might still succeed,
+        // but revert the optimistic like count if creating the like record fails.
+        setOptimisticLikes(prev => ({ ...prev, [siteId]: currentLikes }));
+        setLikedByUser(prev => ({...prev, [siteId]: false}));
     });
   };
 
