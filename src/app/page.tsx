@@ -29,151 +29,125 @@ import { collection, doc, setDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
 import DeployingOverlay from '@/components/app/deploying-overlay';
 
-const initialHtml = `<h1>Welcome to Your To-Do List</h1>
-<div class="card">
-  <input type="text" id="todo-input" placeholder="Add a new task...">
-  <button id="add-btn">Add Task</button>
-  <ul id="todo-list"></ul>
-</div>
+const initialHtml = `<header>
+  <h1>Welcome to My Page</h1>
+  <p>A simple and clean starting point for your next project.</p>
+</header>
+<main>
+  <section id="about">
+    <h2>About This Template</h2>
+    <p>This is a responsive HTML, CSS, and JavaScript template. You can edit the code in the tabs to see your changes live.</p>
+  </section>
+  <section id="features">
+    <h2>Features</h2>
+    <ul>
+      <li>HTML, CSS, JS editor</li>
+      <li>Live preview</li>
+      <li>One-click deploy</li>
+    </ul>
+  </section>
+</main>
+<footer id="page-footer">
+  <p>Powered by Arvind Bishnoi</p>
+</footer>
 `;
 
 const initialCss = `body {
   font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #1e293b, #0f172a);
-  color: #e2e8f0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
+  background-color: #f0f2f5;
+  color: #333;
+  line-height: 1.6;
   margin: 0;
-  text-align: center;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-h1 {
+header {
+  text-align: center;
+  margin-bottom: 3rem;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 1rem;
+  width: 100%;
+  max-width: 800px;
+}
+
+header h1 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #fff;
-  letter-spacing: -1px;
-  margin-bottom: 2rem;
-}
-
-.card {
-  background: rgba(30, 41, 59, 0.5);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 400px;
-  width: 90vw;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-#todo-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  background-color: #0f172a;
-  color: #e2e8f0;
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  box-sizing: border-box;
-}
-
-#add-btn {
-  background: #38bdf8;
-  color: #0f172a;
-  border: none;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  width: 100%;
-  margin-bottom: 1.5rem;
-}
-
-#add-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
-}
-
-#todo-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  text-align: left;
-}
-
-#todo-list li {
-  background: rgba(51, 65, 85, 0.5);
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
+  color: #111;
   margin-bottom: 0.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: background-color 0.2s;
 }
 
-#todo-list li.completed {
-  text-decoration: line-through;
-  color: #64748b;
+header p {
+  font-size: 1.1rem;
+  color: #555;
 }
 
-#todo-list li:hover {
-  background: rgba(51, 65, 85, 0.8);
+main {
+  width: 100%;
+  max-width: 800px;
 }
 
-#todo-list .delete-btn {
-  background: transparent;
-  border: none;
-  color: #ef4444;
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 5px;
+section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #38bdf8;
+}
+
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+li:last-child {
+  border-bottom: none;
+}
+
+#page-footer {
+  text-align: center;
+  margin-top: 2rem;
+  color: #777;
+  font-size: 0.9rem;
+}
+
+/* Add a little animation */
+section {
+  transition: transform 0.3s ease-in-out;
+}
+
+section:hover {
+  transform: translateY(-5px);
 }
 `;
 
-const initialJs = `const todoInput = document.getElementById('todo-input');
-const addBtn = document.getElementById('add-btn');
-const todoList = document.getElementById('todo-list');
+const initialJs = `console.log("Welcome to the editor!");
 
-addBtn.addEventListener('click', addTodo);
-todoInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        addTodo();
-    }
+// Example: Add a click effect to sections
+document.querySelectorAll('section').forEach(section => {
+  section.addEventListener('click', () => {
+    console.log(\`You clicked on the \${section.querySelector('h2').innerText} section.\`);
+    section.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)';
+    setTimeout(() => {
+      section.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+    }, 300);
+  });
 });
-
-function addTodo() {
-    const todoText = todoInput.value.trim();
-    if (todoText !== '') {
-        const li = document.createElement('li');
-        
-        const span = document.createElement('span');
-        span.textContent = todoText;
-        li.appendChild(span);
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '×';
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.addEventListener('click', function() {
-            todoList.removeChild(li);
-        });
-        li.appendChild(deleteBtn);
-        
-        li.addEventListener('click', function(e) {
-            if (e.target.tagName !== 'BUTTON') {
-                li.classList.toggle('completed');
-            }
-        });
-        
-        todoList.appendChild(li);
-        todoInput.value = '';
-    }
-}
 `;
 
 type MobileView = 'editor' | 'preview';
