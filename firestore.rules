@@ -37,7 +37,7 @@ service cloud.firestore {
       }
 
       allow get: if isSiteOwner();
-      allow list: if request.auth != null && request.query.where.size() == 1 && request.query.where[0].field == 'userId' && request.query.where[0].value == request.auth.uid;
+      allow list: if request.auth != null && request.query.where[0].field == 'userId' && request.query.where[0].value == request.auth.uid;
       
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       

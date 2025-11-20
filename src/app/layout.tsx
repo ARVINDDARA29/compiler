@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   description: 'A simple HTML, CSS, and JavaScript editor with live preview and one-click deployment to GitHub Pages.',
 };
 
-// This export is necessary to prevent a Next.js bug related to favicon generation.
-// See: https://github.com/vercel/next.js/issues/54891
-export function generateStaticParams() {
+// This function is added to prevent Next.js from automatically generating a favicon.ico route,
+// which was causing a build error because the file does not exist.
+export async function generateStaticParams() {
   return [];
 }
 
