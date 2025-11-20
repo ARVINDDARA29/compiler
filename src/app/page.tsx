@@ -184,6 +184,7 @@ export default function Home() {
   const [srcDoc, setSrcDoc] = useState('');
   
   const [isDeploying, setIsDeploying] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
   
@@ -230,10 +231,12 @@ export default function Home() {
   };
   
   const runCode = () => {
+    setIsRunning(true);
     setSrcDoc(''); 
     setTimeout(() => {
         setSrcDoc(generateSrcDoc());
-    }, 0);
+        setIsRunning(false);
+    }, 250);
     
     if (isMobile) {
         setMobileView('preview');
@@ -516,6 +519,7 @@ export default function Home() {
     <div className="flex h-screen w-screen flex-col bg-background">
       <AppHeader
         isDeploying={isDeploying}
+        isRunning={isRunning}
         onDeploy={openDeployDialog}
         onRun={runCode}
         onImport={handleImportClick}

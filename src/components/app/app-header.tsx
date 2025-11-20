@@ -13,6 +13,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 
 interface AppHeaderProps {
   isDeploying: boolean;
+  isRunning: boolean;
   onDeploy: () => void;
   onRun: () => void;
   onImport: () => void;
@@ -21,7 +22,7 @@ interface AppHeaderProps {
   onFeedbackClick: () => void;
 }
 
-const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, onImport, mobileView, onSwitchToCode, onFeedbackClick }) => {
+const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, mobileView, onSwitchToCode, onFeedbackClick }) => {
   const isMobile = useIsMobile();
   const { user } = useUser();
   const auth = useAuth();
@@ -42,16 +43,22 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, onImport,
         <div className="flex items-center gap-1 md:gap-2">
             <TooltipProvider delayDuration={0}>
                 {isMobile && mobileView === 'preview' && (
-                    <Button onClick={onSwitchToCode} variant="outline" size="sm" className="flex-shrink-0">
-                        <Code className="md:mr-2 h-4 w-4" />
-                        <span className="hidden md:inline">Code</span>
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button onClick={onSwitchToCode} variant="outline" size="sm" className="flex-shrink-0">
+                                <Code className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                         <TooltipContent>
+                            <p>Back to Code</p>
+                        </TooltipContent>
+                    </Tooltip>
                 )}
                 
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button onClick={onImport} variant="outline" size="sm" className="flex-shrink-0">
-                            <Upload className="md:mr-2 h-4 w-4" />
+                            <Upload className="h-4 w-4 md:mr-2" />
                             <span className="hidden md:inline">Import</span>
                         </Button>
                     </TooltipTrigger>
@@ -62,12 +69,16 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, onImport,
 
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button onClick={onRun} variant="outline" size="sm" className="flex-shrink-0">
-                            <Play className="md:mr-2 h-4 w-4" />
-                            <span className="hidden md:inline">Run</span>
+                         <Button onClick={onRun} variant="outline" size="sm" className="flex-shrink-0" disabled={isRunning}>
+                            {isRunning ? (
+                                <Loader2 className="h-4 w-4 animate-spin md:mr-2" />
+                            ) : (
+                                <Play className="h-4 w-4 md:mr-2" />
+                            )}
+                            <span className="hidden md:inline">{isRunning ? 'Running...' : 'Run'}</span>
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                     <TooltipContent>
                         <p>Run Code</p>
                     </TooltipContent>
                 </Tooltip>
@@ -77,13 +88,13 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, onImport,
                         <Button onClick={onDeploy} disabled={isDeploying} size="sm" className="flex-shrink-0">
                             {isDeploying ? (
                                 <>
-                                    <Loader2 className="md:mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className="h-4 w-4 animate-spin md:mr-2" />
                                     <span className="hidden md:inline">Deploying...</span>
+                                    <span className="inline md:hidden">...</span>
                                 </>
                             ) : (
                                 <>
-                                    <span className="inline md:hidden">Deploy</span>
-                                    <span className="hidden md:inline">Deploy</span>
+                                    <span className="inline">Deploy</span>
                                 </>
                             )}
                         </Button>
@@ -137,4 +148,3 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, onImport,
 };
 
 export default AppHeader;
-
