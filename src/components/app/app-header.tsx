@@ -79,69 +79,112 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
         </div>
         <div className="flex items-center justify-end gap-1 md:gap-2">
             <TooltipProvider delayDuration={0}>
-                {isMobile && mobileView === 'preview' && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button onClick={onSwitchToCode} variant="outline" size="sm" className="flex-shrink-0">
-                                <Code className="h-4 w-4" />
-                            </Button>
-                        </TooltipTrigger>
-                         <TooltipContent>
-                            <p>Back to Code</p>
-                        </TooltipContent>
-                    </Tooltip>
-                )}
+                {isMobile ? (
+                    <>
+                        {mobileView === 'preview' && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button onClick={onSwitchToCode} variant="outline" size="sm" className="flex-shrink-0">
+                                        <Code className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Back to Code</p></TooltipContent>
+                            </Tooltip>
+                        )}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={onRun} variant="outline" size="sm" className="flex-shrink-0" disabled={isRunning}>
+                                    {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Run Code</p></TooltipContent>
+                        </Tooltip>
 
-                {!isMobile && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button onClick={onImport} variant="outline" size="sm" className="flex-shrink-0">
-                                <Upload className="h-4 w-4 md:mr-2" />
-                                <span className="hidden md:inline">Import</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Import Files</p>
-                        </TooltipContent>
-                    </Tooltip>
-                )}
-                
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                         <Button onClick={onRun} variant="outline" size="sm" className="flex-shrink-0" disabled={isRunning}>
-                            {isRunning ? (
-                                <Loader2 className="h-4 w-4 animate-spin md:mr-2" />
-                            ) : (
-                                <Play className="h-4 w-4 md:mr-2" />
-                            )}
-                            <span className="hidden md:inline">{isRunning ? 'Running...' : 'Run'}</span>
-                             {isMobile && <span className="inline md:hidden">Run</span>}
-                        </Button>
-                    </TooltipTrigger>
-                     <TooltipContent>
-                        <p>Run Code</p>
-                    </TooltipContent>
-                </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={onDeploy} disabled={isDeploying} size="sm" className="flex-shrink-0">
+                                    {isDeploying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{isDeploying ? <p>Deploying...</p> : <p>Deploy Project</p>}</TooltipContent>
+                        </Tooltip>
 
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button onClick={onDeploy} disabled={isDeploying} size="sm" className="flex-shrink-0">
-                            {isDeploying ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span className="hidden md:inline ml-2">Deploying...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="inline">Deploy</span>
-                                </>
-                            )}
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        {isDeploying ? <p>Deploying...</p> : <p>Deploy Project</p>}
-                    </TooltipContent>
-                </Tooltip>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9">
+                                    <MoreVertical className="h-5 w-5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56" align="end" forceMount>
+                                <DropdownMenuItem onClick={onImport}>
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    <span>Import Files</span>
+                                </DropdownMenuItem>
+                                {user ? (
+                                <UserMenuItems />
+                                ) : (
+                                    <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={onFeedbackClick}>
+                                            <MessageSquarePlus className="mr-2 h-4 w-4" />
+                                            <span>Feedback</span>
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </>
+                ) : (
+                    <>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={onImport} variant="outline" size="sm" className="flex-shrink-0">
+                                    <Upload className="h-4 w-4 md:mr-2" />
+                                    <span className="hidden md:inline">Import</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Import Files</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={onRun} variant="outline" size="sm" className="flex-shrink-0" disabled={isRunning}>
+                                    {isRunning ? (
+                                        <Loader2 className="h-4 w-4 animate-spin md:mr-2" />
+                                    ) : (
+                                        <Play className="h-4 w-4 md:mr-2" />
+                                    )}
+                                    <span className="hidden md:inline">{isRunning ? 'Running...' : 'Run'}</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Run Code</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={onDeploy} disabled={isDeploying} size="sm" className="flex-shrink-0">
+                                    {isDeploying ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <span className="hidden md:inline ml-2">Deploying...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="inline">Deploy</span>
+                                        </>
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {isDeploying ? <p>Deploying...</p> : <p>Deploy Project</p>}
+                            </TooltipContent>
+                        </Tooltip>
+                    </>
+                )}
             </TooltipProvider>
 
             {user && !isMobile && (
@@ -156,33 +199,6 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56" align="end" forceMount>
                       <UserMenuItems />
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )}
-
-            {isMobile && (
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-9 w-9">
-                            <MoreVertical className="h-5 w-5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
-                        <DropdownMenuItem onClick={onImport}>
-                             <Upload className="mr-2 h-4 w-4" />
-                            <span>Import Files</span>
-                        </DropdownMenuItem>
-                        {user ? (
-                           <UserMenuItems />
-                        ) : (
-                            <>
-                               <DropdownMenuSeparator />
-                               <DropdownMenuItem onClick={onFeedbackClick}>
-                                    <MessageSquarePlus className="mr-2 h-4 w-4" />
-                                    <span>Feedback</span>
-                                </DropdownMenuItem>
-                            </>
-                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             )}
