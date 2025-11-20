@@ -70,8 +70,11 @@ service cloud.firestore {
       // The likeId should be a composite of userId_siteId.
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       
+      // Allow a user to list their own likes.
+      allow list: if request.auth != null && request.query.getRules().rules.userId == request.auth.uid;
+
       // Nobody can read, update, or delete like documents directly.
-      allow read, update, delete: if false;
+      allow get, update, delete: if false;
     }
   }
 }
