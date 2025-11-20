@@ -37,7 +37,8 @@ service cloud.firestore {
       }
 
       allow get: if isSiteOwner();
-      allow list: if request.auth != null && request.query.get("userId") == request.auth.uid;
+      // Allow a user to list the sites that they own.
+      allow list: if request.auth != null && request.query.limit <= 100 && request.query.offset == null && request.query.filters[0][0] == "userId" && request.query.filters[0][1] == "==" && request.query.filters[0][2] == request.auth.uid;
       
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       
@@ -66,7 +67,7 @@ service cloud.firestore {
     match /analytics/{eventId} {
       allow create: if true;
       allow get, update, delete: if false;
-      allow list: if request.auth != null && request.query.get("siteId") != null;
+      allow list: if request.auth != null;
     }
   }
 }
