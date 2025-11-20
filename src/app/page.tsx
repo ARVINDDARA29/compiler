@@ -187,7 +187,7 @@ export default function Home() {
   const [projectName, setProjectName] = useState('');
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
   
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied]_ = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -352,11 +352,11 @@ export default function Home() {
           isPublic: false,
         };
 
-        setDoc(newSiteRef, siteData).catch(async (error) => {
+        setDoc(newSiteRef, siteData, { merge: true }).catch(async (error) => {
             const permissionError = new FirestorePermissionError({
                 path: newSiteRef.path,
                 operation: 'create',
-                requestResourceData: siteData
+                requestResourceData: siteData,
             });
             errorEmitter.emit('permission-error', permissionError);
         });
@@ -690,3 +690,6 @@ export default function Home() {
       
     </div>
   );
+}
+
+    

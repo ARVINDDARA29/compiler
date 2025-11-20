@@ -59,7 +59,6 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
               errorEmitter.emit('permission-error', permissionError);
           });
       }).catch(error => {
-          console.error("Failed to update user profile:", error);
           toast({ variant: 'destructive', title: 'Error', description: 'Could not update user profile.' });
       });
       toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
