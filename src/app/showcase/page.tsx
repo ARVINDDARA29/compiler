@@ -95,7 +95,9 @@ export default function ShowcasePage() {
     setOptimisticLikes(prev => ({ ...prev, [siteId]: (prev[siteId] ?? currentLikes) + 1 }));
     setLikedByUser(prev => ({...prev, [siteId]: true}));
 
+    const likeData = { userId: user.uid, siteId };
 
+    // Update the like count on the site document
     updateDoc(siteRef, { likes: increment(1) }).catch(async (err) => {
       const permissionError = new FirestorePermissionError({
           path: siteRef.path,
@@ -104,12 +106,12 @@ export default function ShowcasePage() {
       });
       errorEmitter.emit('permission-error', permissionError);
       
-      // Revert optimistic update on error
+      // Revert optimistic UI updates on failure
       setOptimisticLikes(prev => ({ ...prev, [siteId]: currentLikes }));
       setLikedByUser(prev => ({...prev, [siteId]: false}));
     });
 
-    const likeData = { userId: user.uid, siteId };
+    // Create a record of the like to prevent duplicates
     setDoc(likeRef, likeData).catch(async (err) => {
         const permissionError = new FirestorePermissionError({
             path: likeRef.path,
@@ -117,8 +119,8 @@ export default function ShowcasePage() {
             requestResourceData: likeData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        // Don't revert like button state here as updateDoc might still succeed,
-        // but revert the optimistic like count if creating the like record fails.
+       
+        // Revert optimistic UI updates on failure
         setOptimisticLikes(prev => ({ ...prev, [siteId]: currentLikes }));
         setLikedByUser(prev => ({...prev, [siteId]: false}));
     });
