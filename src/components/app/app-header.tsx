@@ -40,7 +40,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
             <Rocket className="h-6 w-6 text-primary" />
             <h1 className="text-base font-semibold md:text-xl font-headline">RunAndDeploy</h1>
         </div>
-        <div className="flex items-center gap-1 md:gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-1 md:gap-2">
             <TooltipProvider delayDuration={0}>
                 {isMobile && mobileView === 'preview' && (
                     <Tooltip>
@@ -88,9 +88,8 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                         <Button onClick={onDeploy} disabled={isDeploying} size="sm" className="flex-shrink-0">
                             {isDeploying ? (
                                 <>
-                                    <Loader2 className="h-4 w-4 animate-spin md:mr-2" />
+                                    <Loader2 className="h-4 w-4 animate-spin" />
                                     <span className="hidden md:inline">Deploying...</span>
-                                    <span className="inline md:hidden">...</span>
                                 </>
                             ) : (
                                 <>
@@ -129,6 +128,12 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                             <Link href="/sites">
                                 <LayoutGrid className="mr-2 h-4 w-4" />
                                 <span>My Sites</span>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link href="/analytics">
+                                <LayoutGrid className="mr-2 h-4 w-4" />
+                                <span>Analytics</span>
                             </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={onFeedbackClick}>
