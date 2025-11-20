@@ -53,13 +53,18 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the site was deployed."
+        },
+        "isPublic": {
+            "type": "boolean",
+            "description": "Whether the site is publicly visible in the showcase."
         }
       },
       "required": [
         "userId",
         "projectName",
         "url",
-        "deployedAt"
+        "deployedAt",
+        "isPublic"
       ]
     },
     "Feedback": {

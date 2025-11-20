@@ -2,7 +2,7 @@
 'use client';
 
 import type { FC } from 'react';
-import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload } from 'lucide-react';
+import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, GalleryHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser, useAuth } from '@/firebase';
@@ -39,6 +39,13 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, onDeploy, onRun, onImport,
         <h1 className="text-lg font-semibold md:text-xl font-headline">RunAndDeploy</h1>
       </div>
       <div className="flex items-center gap-2">
+        
+        <Button asChild variant="outline" size="sm">
+            <Link href="/showcase">
+                <GalleryHorizontal className="mr-2 h-4 w-4" /> Showcase
+            </Link>
+        </Button>
+
         {isMobile && mobileView === 'preview' && (
            <Button onClick={onSwitchToCode} variant="outline" size="sm">
             <Code className="mr-2 h-4 w-4" />

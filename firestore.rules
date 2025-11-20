@@ -35,10 +35,14 @@ service cloud.firestore {
       function isSiteOwner() {
         return request.auth != null && resource.data.userId == request.auth.uid;
       }
+      function isPublic() {
+          return resource.data.isPublic == true;
+      }
 
-      // Allow reads if user owns the site.
-      allow get: if isSiteOwner();
-      allow list: if request.auth != null; // Allows querying user's own sites via 'where' clauses.
+      // Allow reads if user owns the site, or if the site is public.
+      allow get: if isSiteOwner() || isPublic();
+      // Allow anyone to list public sites. Allow logged-in users to list their own sites.
+      allow list: if request.query.get('isPublic') == 'true' || (request.auth != null && request.query.get('userId') == request.auth.uid);
       
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       
