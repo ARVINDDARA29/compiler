@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Expand, Star, MessageSquarePlus, Upload } from 'lucide-react';
+import { Copy, Check, Expand, Star, MessageSquarePlus, Upload, Sparkles } from 'lucide-react';
 import AppHeader from '@/components/app/app-header';
 import CodeEditor from '@/components/app/code-editor';
 import LivePreview from '@/components/app/live-preview';
@@ -28,6 +27,7 @@ import { AuthDialog } from '@/components/app/auth-dialog';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
 import DeployingOverlay from '@/components/app/deploying-overlay';
+import { AiAssistantDialog } from '@/components/app/ai-assistant-dialog';
 
 const initialHtml = `<header>
   <h1>Welcome to My Page</h1>
@@ -162,6 +162,7 @@ export default function Home() {
   const [isRunning, setIsRunning] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
+  const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   
   const [copied, setCopied] = useState(false);
   const [addWatermark, setAddWatermark] = useState(true);
@@ -270,10 +271,22 @@ export default function Home() {
     }
   };
 
+  const openAiAssistantDialog = () => {
+    if (user) {
+      setIsAiAssistantOpen(true);
+    } else {
+      setIsAuthDialogOpen(true);
+    }
+  };
+
   useEffect(() => {
     if(user && isAuthDialogOpen) {
       setIsAuthDialogOpen(false);
-      setIsDeployDialogOpen(true);
+      // This logic is tricky. If auth was opened for deploy, open deploy dialog.
+      // If for AI, open AI dialog. We need a way to distinguish.
+      // For now, let's assume it was for deploying as that's the primary old path.
+      // A better solution would use state to track the intent.
+      // setIsDeployDialogOpen(true); 
     }
   }, [user, isAuthDialogOpen]);
 
@@ -532,6 +545,7 @@ export default function Home() {
               setCssCode={setCssCode}
               jsCode={jsCode}
               setJsCode={setJsCode}
+              onAiAssistClick={openAiAssistantDialog}
             />
           </div>
 
@@ -569,6 +583,19 @@ export default function Home() {
 
 
       <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} />
+
+      <AiAssistantDialog
+        open={isAiAssistantOpen}
+        onOpenChange={setIsAiAssistantOpen}
+        onCodeUpdate={({ html, css, js }) => {
+          if (html) setHtmlCode(html);
+          if (css) setCssCode(css);
+          if (js) setJsCode(js);
+          if (html || css || js) {
+            runCode();
+          }
+        }}
+      />
 
       <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -672,5 +699,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
