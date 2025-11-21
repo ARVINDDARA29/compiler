@@ -38,30 +38,31 @@ function useDeploymentCounter() {
     const [count, setCount] = useState<number | null>(null);
 
     useEffect(() => {
-        // Don't do anything until the document is loaded and exists
         if (isDocLoading || !counterData) {
+            setCount(null); // Explicitly set to null when loading or no data
             return;
         }
         
+        let animationFrameId: number;
+
         const calculateCount = () => {
             const now = Date.now();
             const startTime = counterData.startedAt.toMillis();
-            const secondsElapsed = Math.floor((now - startTime) / 1000);
+            const secondsElapsed = (now - startTime) / 1000;
             const increment = secondsElapsed * counterData.incrementRatePerSecond;
-            // Use requestAnimationFrame to batch updates for smoother rendering
-            requestAnimationFrame(() => {
-                setCount(Math.floor(counterData.baseCount + increment));
-            });
+            
+            setCount(Math.floor(counterData.baseCount + increment));
+
+            // Continue the animation loop
+            animationFrameId = requestAnimationFrame(calculateCount);
         };
 
-        // Calculate immediately on load
-        calculateCount();
+        // Start the animation loop
+        animationFrameId = requestAnimationFrame(calculateCount);
 
-        // Then update every 5 seconds
-        const interval = setInterval(calculateCount, 5000);
-
-        // Cleanup interval on component unmount or when dependencies change
-        return () => clearInterval(interval);
+        // Cleanup function to cancel the animation frame when the component unmounts
+        // or dependencies change.
+        return () => cancelAnimationFrame(animationFrameId);
     }, [counterData, isDocLoading]);
 
     return {count, isLoading: isDocLoading && count === null };
@@ -255,3 +256,5 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
 };
 
 export default AppHeader;
+
+    
