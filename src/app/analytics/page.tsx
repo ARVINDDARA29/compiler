@@ -267,7 +267,7 @@ export default function AnalyticsPage() {
                ) : (
                    <div className="text-center py-10 border-2 border-dashed rounded-lg">
                         <h3 className="text-lg font-semibold">No Analytics Data Yet</h3>
-                        <p className="text-muted-foreground mt-1">Visit your deployed site to start collecting data for '{selectedSiteProjectname}'.</p>
+                        <p className="text-muted-foreground mt-1">Visit your deployed site to start collecting data for '{selectedSiteProjectName}'.</p>
                     </div>
                )
             )}
@@ -290,7 +290,8 @@ export default function AnalyticsPage() {
   );
 }
 
-const AnalyticsSkeleton = () => (
+const AnalyticsSkeleton = () => {
+  return (
     <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
             <Skeleton className="h-9 w-64" />
@@ -301,9 +302,11 @@ const AnalyticsSkeleton = () => (
         </div>
         <SiteAnalyticsSkeleton />
     </div>
-);
+  );
+};
 
-const SiteAnalyticsSkeleton = () => (
+const SiteAnalyticsSkeleton = () => {
+  return (
     <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-3">
             <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><Skeleton className="h-5 w-24"/><Skeleton className="h-4 w-4"/></CardHeader><CardContent><Skeleton className="h-7 w-12 mt-2"/></CardContent></Card>
@@ -325,5 +328,6 @@ const SiteAnalyticsSkeleton = () => (
             </card>
         </div>
     </div>
-);
+  );
+};
     
