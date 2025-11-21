@@ -220,17 +220,16 @@ export default function Home() {
 
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-        const newSrcDoc = generateSrcDoc();
-        setSrcDoc(newSrcDoc);
-    }, 250);
-    return () => clearTimeout(timeoutId);
-  }, [htmlCode, cssCode, jsCode]);
+    // Run code on initial load
+    setSrcDoc(generateSrcDoc());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (isFullScreenPreviewOpen) {
       setSrcDoc(generateSrcDoc());
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFullScreenPreviewOpen]);
 
 
@@ -673,3 +672,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
