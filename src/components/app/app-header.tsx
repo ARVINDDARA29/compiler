@@ -90,12 +90,6 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                 <span>My Sites</span>
             </Link>
         </DropdownMenuItem>
-         <DropdownMenuItem asChild>
-            <Link href="/analytics">
-                <LayoutGrid className="mr-2 h-4 w-4" />
-                <span>Analytics</span>
-            </Link>
-        </DropdownMenuItem>
         <DropdownMenuItem onClick={onFeedbackClick}>
             <MessageSquarePlus className="mr-2 h-4 w-4" />
             <span>Feedback</span>
