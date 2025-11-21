@@ -49,7 +49,7 @@ function useDeploymentCounter() {
         };
 
         calculateCount(); // Initial calculation
-        const interval = setInterval(calculateCount, 2000); // Update every 2 seconds
+        const interval = setInterval(calculateCount, 5000); // Update every 5 seconds
 
         return () => clearInterval(interval);
     }, [counterData]);
@@ -109,8 +109,8 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
             <h1 className="text-base font-semibold md:text-xl font-headline">RunAndDeploy</h1>
              {deploymentCount > 0 && (
                 <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-sm">
+                    <span className="text-muted-foreground">Total Deploys</span>
                     <span className="font-semibold text-primary">{new Intl.NumberFormat().format(deploymentCount)}</span>
-                    <span className="text-muted-foreground">Deploys</span>
                 </div>
             )}
         </div>
