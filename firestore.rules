@@ -11,10 +11,17 @@
  * - /sites/{siteId}: Stores all deployed sites. Access is scoped by userId.
  * - /feedbacks/{feedbackId}: Stores user feedback. Users can only write their own feedback.
  * - /gitapi/{apiId}: Stores the GitHub API token. Should only be readable by server functions.
+ * - /app_state/deployment_counter: Stores global app state like the deployment counter.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Allow public read on the deployment counter
+    match /app_state/deployment_counter {
+      allow get: if true;
+      allow write: if false; // Disallow client-side writes
+    }
     
     // WARNING: INSECURE RULE
     // This allows any authenticated user to read and write any data.

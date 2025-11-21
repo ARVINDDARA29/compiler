@@ -2,14 +2,16 @@
 'use client';
 
 import type { FC } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useFirebase, useDoc } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '../ui/dropdown-menu';
 import Link from 'next/link';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { doc, Timestamp } from 'firebase/firestore';
 
 interface AppHeaderProps {
   isDeploying: boolean;
@@ -22,10 +24,45 @@ interface AppHeaderProps {
   onFeedbackClick: () => void;
 }
 
+interface AppState {
+    id: string;
+    baseCount: number;
+    startedAt: Timestamp;
+    incrementRatePerSecond: number;
+}
+
+function useDeploymentCounter() {
+    const { firestore } = useFirebase();
+    const counterDocRef = useMemo(() => firestore ? doc(firestore, 'app_state', 'deployment_counter') : null, [firestore]);
+    const { data: counterData } = useDoc<AppState>(counterDocRef);
+    const [count, setCount] = useState<number>(0);
+
+    useEffect(() => {
+        if (!counterData) return;
+        
+        const calculateCount = () => {
+            const now = Date.now();
+            const startTime = counterData.startedAt.toMillis();
+            const secondsElapsed = Math.floor((now - startTime) / 1000);
+            const increment = secondsElapsed * counterData.incrementRatePerSecond;
+            setCount(Math.floor(counterData.baseCount + increment));
+        };
+
+        calculateCount(); // Initial calculation
+        const interval = setInterval(calculateCount, 2000); // Update every 2 seconds
+
+        return () => clearInterval(interval);
+    }, [counterData]);
+
+    return count;
+}
+
+
 const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, mobileView, onSwitchToCode, onFeedbackClick }) => {
   const isMobile = useIsMobile();
   const { user } = useUser();
   const auth = useAuth();
+  const deploymentCount = useDeploymentCounter();
 
 
   const handleLogout = () => {
@@ -73,9 +110,15 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-2 md:px-6">
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-2 md:gap-4">
             <Rocket className="h-6 w-6 text-primary" />
             <h1 className="text-base font-semibold md:text-xl font-headline">RunAndDeploy</h1>
+             {deploymentCount > 0 && !isMobile && (
+                <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-sm">
+                    <span className="font-semibold text-primary">{new Intl.NumberFormat().format(deploymentCount)}</span>
+                    <span className="text-muted-foreground">Deploys</span>
+                </div>
+            )}
         </div>
         <div className="flex items-center justify-end gap-1 md:gap-2">
             <TooltipProvider delayDuration={0}>
