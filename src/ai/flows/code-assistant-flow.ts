@@ -22,7 +22,7 @@ export const codeAssistantFlow = ai.defineFlow(
   },
   async (input, streamingCallback) => {
     const { stream } = await ai.generate({
-      model: 'googleai/gemini-1.5-flash-latest',
+      model: 'gemini-1.5-flash-latest',
       prompt: `You are an expert web developer. The user will provide a prompt and you will generate the HTML, CSS, and JavaScript code to implement it.
 
       IMPORTANT:
@@ -52,6 +52,6 @@ export const codeAssistantFlow = ai.defineFlow(
 );
 
 export async function runCodeAssistantFlow(prompt: string) {
-  const { stream } = await codeAssistantFlow({prompt});
+  const {stream} = await codeAssistantFlow({prompt});
   return stream;
 }
