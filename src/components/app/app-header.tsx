@@ -107,7 +107,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
         <div className="flex items-center gap-2 md:gap-4">
             <Rocket className="h-6 w-6 text-primary" />
             <h1 className="text-base font-semibold md:text-xl font-headline">RunAndDeploy</h1>
-             {deploymentCount > 0 && !isMobile && (
+             {deploymentCount > 0 && (
                 <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-sm">
                     <span className="font-semibold text-primary">{new Intl.NumberFormat().format(deploymentCount)}</span>
                     <span className="text-muted-foreground">Deploys</span>
