@@ -18,8 +18,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // Allow public read on the deployment counter
-    match /app_state/deployment_counter {
+    match /app_state/{docId} {
       allow get: if true;
+      allow list: if true;
       allow write: if false; // Disallow client-side writes
     }
     
