@@ -1,7 +1,6 @@
 'use server';
 
 import {ai} from '@/ai/genkit';
-import {runFlow} from 'genkit';
 import {z} from 'zod';
 
 const CodeAssistantInputSchema = z.object({
@@ -53,6 +52,6 @@ export const codeAssistantFlow = ai.defineFlow(
 );
 
 export async function runCodeAssistantFlow(prompt: string) {
-  const stream = await runFlow(codeAssistantFlow, {prompt});
+  const { stream } = await codeAssistantFlow({prompt});
   return stream;
 }
