@@ -34,34 +34,37 @@ interface AppState {
 function useDeploymentCounter() {
     const { firestore } = useFirebase();
     const counterDocRef = useMemo(() => firestore ? doc(firestore, 'app_state', 'deployment_counter') : null, [firestore]);
-    const { data: counterData, isLoading } = useDoc<AppState>(counterDocRef);
+    const { data: counterData, isLoading: isDocLoading } = useDoc<AppState>(counterDocRef);
     const [count, setCount] = useState<number | null>(null);
 
     useEffect(() => {
-        if (!counterData) {
-            if (!isLoading) {
-                // If not loading and no data, maybe it needs setup.
-                // For now, we'll just show nothing.
-                setCount(null);
-            }
+        // Don't do anything until the document is loaded and exists
+        if (isDocLoading || !counterData) {
             return;
-        };
+        }
         
         const calculateCount = () => {
             const now = Date.now();
             const startTime = counterData.startedAt.toMillis();
             const secondsElapsed = Math.floor((now - startTime) / 1000);
             const increment = secondsElapsed * counterData.incrementRatePerSecond;
-            setCount(Math.floor(counterData.baseCount + increment));
+            // Use requestAnimationFrame to batch updates for smoother rendering
+            requestAnimationFrame(() => {
+                setCount(Math.floor(counterData.baseCount + increment));
+            });
         };
 
-        calculateCount(); // Initial calculation
-        const interval = setInterval(calculateCount, 5000); // Update every 5 seconds
+        // Calculate immediately on load
+        calculateCount();
 
+        // Then update every 5 seconds
+        const interval = setInterval(calculateCount, 5000);
+
+        // Cleanup interval on component unmount or when dependencies change
         return () => clearInterval(interval);
-    }, [counterData, isLoading]);
+    }, [counterData, isDocLoading]);
 
-    return {count, isLoading};
+    return {count, isLoading: isDocLoading && count === null };
 }
 
 
