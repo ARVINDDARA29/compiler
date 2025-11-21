@@ -34,11 +34,18 @@ interface AppState {
 function useDeploymentCounter() {
     const { firestore } = useFirebase();
     const counterDocRef = useMemo(() => firestore ? doc(firestore, 'app_state', 'deployment_counter') : null, [firestore]);
-    const { data: counterData } = useDoc<AppState>(counterDocRef);
-    const [count, setCount] = useState<number>(0);
+    const { data: counterData, isLoading } = useDoc<AppState>(counterDocRef);
+    const [count, setCount] = useState<number | null>(null);
 
     useEffect(() => {
-        if (!counterData) return;
+        if (!counterData) {
+            if (!isLoading) {
+                // If not loading and no data, maybe it needs setup.
+                // For now, we'll just show nothing.
+                setCount(null);
+            }
+            return;
+        };
         
         const calculateCount = () => {
             const now = Date.now();
@@ -52,9 +59,9 @@ function useDeploymentCounter() {
         const interval = setInterval(calculateCount, 5000); // Update every 5 seconds
 
         return () => clearInterval(interval);
-    }, [counterData]);
+    }, [counterData, isLoading]);
 
-    return count;
+    return {count, isLoading};
 }
 
 
@@ -62,7 +69,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
   const isMobile = useIsMobile();
   const { user } = useUser();
   const auth = useAuth();
-  const deploymentCount = useDeploymentCounter();
+  const { count: deploymentCount, isLoading: isCounterLoading } = useDeploymentCounter();
 
 
   const handleLogout = () => {
@@ -108,8 +115,10 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
             <Rocket className="h-6 w-6 text-primary" />
             <h1 className="text-base font-semibold md:text-xl font-headline">RunAndDeploy</h1>
             <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-sm">
-                <span className="text-muted-foreground">Total Deploys</span>
-                <span className="font-semibold text-primary">{deploymentCount > 0 ? new Intl.NumberFormat().format(deploymentCount) : '...'}</span>
+                <span className="text-muted-foreground font-medium">Total Deploys</span>
+                <span className="font-semibold text-primary">
+                    {isCounterLoading || deploymentCount === null ? '...' : new Intl.NumberFormat().format(deploymentCount)}
+                </span>
             </div>
         </div>
         <div className="flex items-center justify-end gap-1 md:gap-2">
