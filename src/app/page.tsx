@@ -14,10 +14,83 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { deployToGithub } from '@/app/actions/deploy';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
+const defaultHtml = `
+<div class="container">
+  <header>
+    <h1>Welcome to RunAndDeploy</h1>
+    <p>Your simple editor for HTML, CSS, and JavaScript.</p>
+  </header>
+  <main>
+    <h2>Created by Arvind Bishnoi</h2>
+    <p>This tool allows you to write code in the editors and see a live preview instantly. When you're ready, you can deploy your project with a single click.</p>
+    <p>Feel free to edit this code and start your own project!</p>
+  </main>
+  <footer>
+    <p>Happy Coding!</p>
+  </footer>
+</div>
+`.trim();
+
+const defaultCss = `
+body {
+  font-family: sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  color: #333;
+  margin: 0;
+  text-align: center;
+}
+
+.container {
+  background-color: #ffffff;
+  padding: 2rem 3rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  max-width: 600px;
+}
+
+header h1 {
+  font-size: 2.5rem;
+  color: #1a73e8;
+  margin-bottom: 0.5rem;
+}
+
+header p {
+  font-size: 1.1rem;
+  color: #5f6368;
+  margin-top: 0;
+}
+
+main h2 {
+  font-size: 1.5rem;
+  margin-top: 2rem;
+  color: #3c4043;
+}
+
+p {
+  line-height: 1.6;
+}
+
+footer {
+  margin-top: 2rem;
+  font-style: italic;
+  color: #5f6368;
+}
+`.trim();
+
+const defaultJs = `
+// Feel free to add your own JavaScript!
+console.log("Welcome to RunAndDeploy by Arvind Bishnoi!");
+`.trim();
+
+
 export default function Home() {
-  const [htmlCode, setHtmlCode] = useState('');
-  const [cssCode, setCssCode] = useState('');
-  const [jsCode, setJsCode] = useState('');
+  const [htmlCode, setHtmlCode] = useState(defaultHtml);
+  const [cssCode, setCssCode] = useState(defaultCss);
+  const [jsCode, setJsCode] = useState(defaultJs);
   const [srcDoc, setSrcDoc] = useState('');
   const [isDeploying, setIsDeploying] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -55,6 +128,10 @@ export default function Home() {
         }
     }, 300);
   }, [htmlCode, cssCode, jsCode, isMobile]);
+
+  useEffect(() => {
+    runCode();
+  }, []);
 
   const handleDeployClick = () => {
     if (user) {
@@ -180,7 +257,7 @@ export default function Home() {
     a.href = url;
     a.download = 'index.html';
     document.body.appendChild(a);
-    a.click();
+a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast({ title: 'Project Exported', description: 'index.html has been downloaded.' });
