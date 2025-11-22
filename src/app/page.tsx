@@ -8,7 +8,8 @@ import LivePreview from '@/components/app/live-preview';
 import { AuthDialog } from '@/components/app/auth-dialog';
 import { DeployDialog } from '@/components/app/deploy-dialog';
 import DeployingOverlay from '@/components/app/deploying-overlay';
-import { useUser, useFirebase, errorEmitter } from '@/firebase';
+import { FeedbackDialog } from '@/components/app/feedback-dialog';
+import { useUser, useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { deployToGithub } from '@/app/actions/deploy';
@@ -96,6 +97,7 @@ export default function Home() {
   const [isRunning, setIsRunning] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [showDeployingOverlay, setShowDeployingOverlay] = useState(false);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
 
@@ -262,6 +264,14 @@ a.click();
     URL.revokeObjectURL(url);
     toast({ title: 'Project Exported', description: 'index.html has been downloaded.' });
   };
+  
+  const handleFeedbackClick = () => {
+    if (user) {
+        setIsFeedbackDialogOpen(true);
+    } else {
+        setIsAuthDialogOpen(true);
+    }
+  }
 
 
   return (
@@ -277,7 +287,7 @@ a.click();
         onExport={handleExport}
         mobileView={mobileView}
         onSwitchToCode={() => setMobileView('editor')}
-        onFeedbackClick={() => toast({ title: 'Feedback', description: 'Feedback feature coming soon!' })}
+        onFeedbackClick={handleFeedbackClick}
       />
       <input type="file" ref={importFileRef} onChange={handleFileChange} accept=".html,.css,.js" multiple style={{ display: 'none' }} />
 
@@ -323,6 +333,10 @@ a.click();
         onOpenChange={setIsDeployDialogOpen} 
         onConfirm={handleConfirmDeploy}
         isDeploying={isDeploying} 
+      />
+      <FeedbackDialog
+        open={isFeedbackDialogOpen}
+        onOpenChange={setIsFeedbackDialogOpen}
       />
     </div>
   );

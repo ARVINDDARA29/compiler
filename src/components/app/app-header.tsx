@@ -160,7 +160,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                                 <p>Export Project</p>
                             </TooltipContent>
                         </Tooltip>
-                        
+
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button onClick={onRun} variant="outline" size="sm" className="flex-shrink-0" disabled={isRunning}>
@@ -202,7 +202,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
 
              <ThemeToggle />
 
-            {user && !isMobile && (
+            {user ? (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-8 w-8 rounded-full flex-shrink-0">
@@ -216,6 +216,8 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                       <UserMenuItems />
                     </DropdownMenuContent>
                 </DropdownMenu>
+            ) : !isMobile && (
+                 <Button variant="ghost" onClick={onDeploy}>Login</Button>
             )}
         </div>
     </header>

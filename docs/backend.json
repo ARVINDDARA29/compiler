@@ -73,9 +73,9 @@
           "type": "string",
           "description": "The ID of the user providing the feedback."
         },
-        "projectName": {
+        "userName": {
           "type": "string",
-          "description": "The name of the project the feedback is for."
+          "description": "The name of the user providing the feedback."
         },
         "rating": {
           "type": "number",
@@ -95,7 +95,6 @@
       },
       "required": [
         "userId",
-        "projectName",
         "rating",
         "submittedAt"
       ]
