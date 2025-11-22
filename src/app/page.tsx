@@ -1,229 +1,271 @@
-
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import AppHeader from '@/components/app/app-header';
+import CodeEditor from '@/components/app/code-editor';
+import LivePreview from '@/components/app/live-preview';
+import { AuthDialog } from '@/components/app/auth-dialog';
+import { DeployDialog } from '@/components/app/deploy-dialog';
+import DeployingOverlay from '@/components/app/deploying-overlay';
+import { useUser, useFirebase, errorEmitter } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { AiAssistantDialog } from '@/components/app/ai-assistant-dialog';
+import { deployToGithub } from '@/app/actions/deploy';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function Home() {
-    const [apiKey, setApiKey] = useState('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');
-    const [userPrompt, setUserPrompt] = useState('');
-    const [code, setCode] = useState('');
-    const [isGenerating, setIsGenerating] = useState(false);
+  const [htmlCode, setHtmlCode] = useState('');
+  const [cssCode, setCssCode] = useState('');
+  const [jsCode, setJsCode] = useState('');
+  const [srcDoc, setSrcDoc] = useState('');
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
+  const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
+  const [showDeployingOverlay, setShowDeployingOverlay] = useState(false);
+  const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
 
-    const abortControllerRef = useRef<AbortController | null>(null);
-    const codeOutputRef = useRef<HTMLElement>(null);
-    const previewFrameRef = useRef<HTMLIFrameElement>(null);
-    
-    // System Prompt to enforce single file HTML
-    const SYSTEM_PROMPT = `You are an expert Frontend Developer. 
-    Your task is to write complete, production-ready web code based on the user's prompt.
-    RULES:
-    1. Output ONLY a single HTML file containing all CSS (in <style>) and JavaScript (in <script>).
-    2. Do NOT use external CSS/JS files. Use CDNs only for libraries (Tailwind, FontAwesome, Three.js etc) if needed.
-    3. Make the design modern, responsive, and visually stunning.
-    4. Do NOT output markdown backticks (like \`\`\`html). Just raw code.
-    5. If using Tailwind, use the script tag: <script src="https://cdn.tailwindcss.com"><\/script>
-    6. Start directly with <!DOCTYPE html>.`;
-
-    const generateCode = async () => {
-        if (!userPrompt.trim()) {
-            alert("Please enter a prompt!");
-            return;
+  const { toast } = useToast();
+  const { user } = useUser();
+  const { firestore } = useFirebase();
+  const isMobile = useIsMobile();
+  const previewRef = useRef<HTMLIFrameElement>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
+  
+  const runCode = useCallback(() => {
+    setIsRunning(true);
+    const combinedSrc = `
+      <html>
+        <head>
+          <style>${cssCode}</style>
+        </head>
+        <body>
+          ${htmlCode}
+          <script>${jsCode}</script>
+        </body>
+      </html>
+    `;
+    setSrcDoc(combinedSrc);
+    // Give iframe time to render
+    setTimeout(() => {
+        setIsRunning(false);
+        if (isMobile) {
+            setMobileView('preview');
         }
-        if (!apiKey.trim()) {
-            alert("API Key is missing!");
-            return;
-        }
+    }, 300);
+  }, [htmlCode, cssCode, jsCode, isMobile]);
 
-        if (isGenerating) {
-            abortControllerRef.current?.abort();
-            setIsGenerating(false);
-            return;
-        }
+  const handleDeployClick = () => {
+    if (user) {
+      setIsDeployDialogOpen(true);
+    } else {
+      setIsAuthDialogOpen(true);
+    }
+  };
+  
+  const handleConfirmDeploy = async (projectName: string, addWatermark: boolean) => {
+    setIsDeployDialogOpen(false);
+    setIsDeploying(true);
+    setShowDeployingOverlay(true);
 
-        setIsGenerating(true);
-        setCode('');
+    try {
+      await new Promise(resolve => setTimeout(resolve, 45000));
 
-        abortControllerRef.current = new AbortController();
+      const result = await deployToGithub({
+        html: htmlCode,
+        css: cssCode,
+        js: jsCode,
+        projectName,
+        addWatermark
+      });
 
-        try {
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    "model": "kwaipilot/kat-coder-pro:free",
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": userPrompt}
-                    ],
-                    "stream": true,
-                    "max_tokens": 8000
-                }),
-                signal: abortControllerRef.current.signal
-            });
-
-            if (!response.ok) throw new Error(`API Error: ${response.status}`);
-            if (!response.body) throw new Error('Response body is null');
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-            let accumulatedCode = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6);
-                        if (data === '[DONE]') break;
-
-                        try {
-                            const parsed = JSON.parse(data);
-                            const content = parsed.choices[0]?.delta?.content || "";
-                            if (content) {
-                                accumulatedCode += content;
-                                setCode(accumulatedCode);
-                            }
-                        } catch (e) {
-                            console.error("JSON Parse error", e);
-                        }
-                    }
-                }
-            }
-        } catch (error: any) {
-            if (error.name === 'AbortError') {
-                console.log('Generation stopped.');
-            } else {
-                setCode(prev => prev + `\n\n[Error: ${error.message}]`);
-            }
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-    
-    const renderPreview = useCallback((codeToRender: string) => {
-        if (previewFrameRef.current) {
-            let cleanCode = codeToRender.replace(/```html|```/g, "");
-            const blob = new Blob([cleanCode], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            previewFrameRef.current.src = url;
-            // It's good practice to revoke the URL after it's loaded to free up memory
-            previewFrameRef.current.onload = () => URL.revokeObjectURL(url);
-        }
-    }, []);
-
-    useEffect(() => {
-       if (!isGenerating && code) {
-           renderPreview(code);
-       }
-       // Auto-scroll code view
-       if (codeOutputRef.current) {
-           codeOutputRef.current.parentElement!.scrollTop = codeOutputRef.current.parentElement!.scrollHeight;
-       }
-    }, [code, isGenerating, renderPreview]);
-
-
-    const runCodeManual = () => {
-        if (code) {
-            renderPreview(code);
-        }
-    };
-
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(code).then(() => {
-            alert("Code copied to clipboard!");
+      if (result.success && result.url && firestore && user) {
+        const siteData = {
+          userId: user.uid,
+          projectName: projectName,
+          url: result.url,
+          deployedAt: serverTimestamp(),
+        };
+        const siteRef = doc(firestore, 'sites', `${user.uid}-${projectName}`);
+        await setDoc(siteRef, siteData).catch(err => {
+             const path = siteRef.path;
+             const operation = 'create';
+             const requestResourceData = siteData;
+             const permissionError = new FirestorePermissionError({path, operation, requestResourceData});
+             errorEmitter.emit('permission-error', permissionError);
         });
-    };
 
-    const handlePromptKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.ctrlKey && e.key === 'Enter') {
-            generateCode();
+        toast({
+          title: 'Deployment Successful!',
+          description: (
+            <span>
+              Your site is live at:{' '}
+              <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline">
+                {result.url}
+              </a>
+            </span>
+          ),
+          duration: 10000,
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Deployment Failed',
+          description: result.error || 'An unknown error occurred.',
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Deployment Failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred.',
+      });
+    } finally {
+      setIsDeploying(false);
+      setShowDeployingOverlay(false);
+    }
+  };
+
+  const handleAiCodeUpdate = (codes: { html?: string; css?: string; js?: string }) => {
+    setHtmlCode(codes.html || '');
+    setCssCode(codes.css || '');
+    setJsCode(codes.js || '');
+    toast({
+      title: 'AI Assistant',
+      description: 'Code has been updated in the editors.',
+    });
+  };
+
+  const handleImport = () => {
+    importFileRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        if (file.name.endsWith('.html')) {
+          setHtmlCode(content);
+        } else if (file.name.endsWith('.css')) {
+          setCssCode(content);
+        } else if (file.name.endsWith('.js')) {
+          setJsCode(content);
         }
-    };
+      };
+      reader.readAsText(file);
+    }
+    toast({ title: 'Files Imported', description: 'Code editors have been updated.' });
+    event.target.value = ''; // Reset input
+  };
+  
+  const handleExport = () => {
+    const content = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exported Project</title>
+  <style>
+    ${cssCode}
+  </style>
+</head>
+<body>
+  ${htmlCode}
+  <script>
+    ${jsCode}
+  </script>
+</body>
+</html>
+    `.trim();
 
-    return (
-        <div className="h-screen flex flex-col">
-            <header className="h-14 border-b border-slate-700 flex items-center justify-between px-6 bg-slate-900/80">
-                <div className="flex items-center gap-3">
-                    <i className="fa-solid fa-robot text-sky-400 text-xl"></i>
-                    <h1 className="font-bold text-lg tracking-wide text-white">AI Code Architect <span className="text-xs text-slate-400 font-normal ml-2">v1.0 (Streaming)</span></h1>
-                </div>
-                <div className="flex gap-4 items-center">
-                    <div className="relative group">
-                        <input 
-                            type="password"
-                            id="apiKeyInput"
-                            placeholder="OpenRouter API Key"
-                            className="bg-slate-800 text-xs text-slate-300 px-3 py-1.5 rounded border border-slate-600 focus:border-sky-500 outline-none w-48 transition-all"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                        />
-                        <div className="absolute right-0 top-full mt-1 w-64 p-2 bg-black text-xs rounded hidden group-hover:block z-50 border border-slate-700">
-                            Default key loaded. Change if needed.
-                        </div>
-                    </div>
-                    <button onClick={runCodeManual} className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-2">
-                        <i className="fa-solid fa-play"></i> Run Again
-                    </button>
-                </div>
-            </header>
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'index.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: 'Project Exported', description: 'index.html has been downloaded.' });
+  };
 
-            <div className="flex-1 flex overflow-hidden">
-                <div className="w-1/2 flex flex-col border-r border-slate-700">
-                    <div className="p-4 bg-slate-800/50 border-b border-slate-700">
-                        <label className="block text-sky-400 text-sm font-semibold mb-2">
-                            <i className="fa-solid fa-wand-magic-sparkles mr-1"></i> Kya banana hai? (Prompt)
-                        </label>
-                        <div className="relative">
-                            <textarea 
-                                id="userPrompt"
-                                className="w-full h-24 bg-slate-900 text-slate-200 p-3 rounded-lg border border-slate-600 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none resize-none text-sm shadow-inner"
-                                placeholder="Example: Ek login page banao jisme floating particles background ho aur glassmorphism effect ho..."
-                                value={userPrompt}
-                                onChange={(e) => setUserPrompt(e.target.value)}
-                                onKeyDown={handlePromptKeyDown}
-                            ></textarea>
-                            <button id="generateBtn" onClick={generateCode} className="absolute bottom-3 right-3 bg-sky-600 hover:bg-sky-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-all shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <span>{isGenerating ? 'Stop' : 'Generate'}</span> 
-                                <i className={`fa-solid ${isGenerating ? 'fa-stop' : 'fa-paper-plane'}`}></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div className="flex-1 flex flex-col min-h-0 bg-[#1e1e1e]">
-                        <div className="flex justify-between items-center px-4 py-2 bg-[#252526] border-b border-[#3e3e42] text-xs">
-                            <span className="text-slate-300 font-mono">generated_code.html</span>
-                            <div className="flex gap-2">
-                                <button onClick={copyToClipboard} className="text-slate-400 hover:text-white" title="Copy Code">
-                                    <i className="fa-regular fa-copy"></i>
-                                </button>
-                                {isGenerating && <span className="text-slate-500 italic flex items-center"><div className="loader mr-1"></div> Generating...</span>}
-                            </div>
-                        </div>
-                        <div className="flex-1 overflow-auto p-4 relative">
-                            <pre className="code-editor text-sm m-0"><code ref={codeOutputRef} className="language-html text-green-400 whitespace-pre-wrap">{code}</code>{isGenerating && <span className="typing-cursor"></span>}</pre>
-                        </div>
-                    </div>
-                </div>
-                <div className="w-1/2 flex flex-col bg-white">
-                    <div className="bg-slate-100 border-b border-slate-300 px-4 py-2 flex justify-between items-center">
-                        <span className="text-slate-600 text-xs font-bold uppercase tracking-wider"><i className="fa-solid fa-desktop mr-1"></i> Live Preview</span>
-                        <div className="flex gap-1">
-                            <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                        </div>
-                    </div>
-                    <div className="flex-1 relative bg-white bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgb3BhY2l0eT0iMC4wNSI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIi8+PHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiLz48L3N2Zz4=')]">
-                        <iframe ref={previewFrameRef} className="w-full h-full border-none" sandbox="allow-scripts allow-modals allow-forms allow-popups allow-same-origin"></iframe>
-                    </div>
-                </div>
+
+  return (
+    <div className="flex h-screen w-full flex-col bg-background text-foreground">
+      {showDeployingOverlay && <DeployingOverlay />}
+
+      <AppHeader
+        isDeploying={isDeploying}
+        isRunning={isRunning}
+        onDeploy={handleDeployClick}
+        onRun={runCode}
+        onImport={handleImport}
+        onExport={handleExport}
+        mobileView={mobileView}
+        onSwitchToCode={() => setMobileView('editor')}
+        onFeedbackClick={() => toast({ title: 'Feedback', description: 'Feedback feature coming soon!' })}
+      />
+      <input type="file" ref={importFileRef} onChange={handleFileChange} accept=".html,.css,.js" multiple style={{ display: 'none' }} />
+
+      <main className="flex-1 overflow-hidden">
+        {isMobile ? (
+            <div className="h-full">
+                {mobileView === 'editor' ? (
+                   <CodeEditor
+                        htmlCode={htmlCode}
+                        setHtmlCode={setHtmlCode}
+                        cssCode={cssCode}
+                        setCssCode={setCssCode}
+                        jsCode={jsCode}
+                        setJsCode={setJsCode}
+                        onAiAssistClick={() => setIsAiAssistantOpen(true)}
+                    />
+                ) : (
+                    <LivePreview ref={previewRef} srcDoc={srcDoc} />
+                )}
             </div>
-        </div>
-    );
+        ) : (
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+                <ResizablePanel defaultSize={50}>
+                    <CodeEditor
+                        htmlCode={htmlCode}
+                        setHtmlCode={setHtmlCode}
+                        cssCode={cssCode}
+                        setCssCode={setCssCode}
+                        jsCode={jsCode}
+                        setJsCode={setJsCode}
+                        onAiAssistClick={() => setIsAiAssistantOpen(true)}
+                    />
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={50}>
+                    <LivePreview ref={previewRef} srcDoc={srcDoc} />
+                </ResizablePanel>
+            </ResizablePanelGroup>
+        )}
+      </main>
+
+      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} />
+      <DeployDialog 
+        open={isDeployDialogOpen} 
+        onOpenChange={setIsDeployDialogOpen} 
+        onConfirm={handleConfirmDeploy}
+        isDeploying={isDeploying} 
+      />
+      <AiAssistantDialog
+        open={isAiAssistantOpen}
+        onOpenChange={setIsAiAssistantOpen}
+        onCodeUpdate={handleAiCodeUpdate}
+      />
+    </div>
+  );
 }
