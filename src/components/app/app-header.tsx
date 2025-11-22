@@ -2,16 +2,15 @@
 'use client';
 
 import type { FC } from 'react';
-import React, { useState, useEffect, useMemo } from 'react';
+import React from 'react';
 import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, Download, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useUser, useAuth, useFirebase, useDoc } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '../ui/dropdown-menu';
 import Link from 'next/link';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { doc, Timestamp } from 'firebase/firestore';
 
 interface AppHeaderProps {
   isDeploying: boolean;
@@ -25,56 +24,11 @@ interface AppHeaderProps {
   onFeedbackClick: () => void;
 }
 
-interface AppState {
-    id: string;
-    baseCount: number;
-    startedAt: Timestamp;
-    incrementRatePerSecond: number;
-}
-
-function useDeploymentCounter() {
-    const { firestore } = useFirebase();
-    const counterDocRef = useMemo(() => firestore ? doc(firestore, 'app_state', 'deployment_counter') : null, [firestore]);
-    const { data: counterData, isLoading: isDocLoading } = useDoc<AppState>(counterDocRef);
-    const [count, setCount] = useState<number | null>(null);
-
-    useEffect(() => {
-        if (isDocLoading || !counterData) {
-            setCount(null); // Explicitly set to null when loading or no data
-            return;
-        }
-        
-        let animationFrameId: number;
-
-        const calculateCount = () => {
-            const now = Date.now();
-            const startTime = counterData.startedAt.toMillis();
-            const secondsElapsed = (now - startTime) / 1000;
-            const increment = secondsElapsed * counterData.incrementRatePerSecond;
-            
-            setCount(Math.floor(counterData.baseCount + increment));
-
-            // Continue the animation loop
-            animationFrameId = requestAnimationFrame(calculateCount);
-        };
-
-        // Start the animation loop
-        animationFrameId = requestAnimationFrame(calculateCount);
-
-        // Cleanup function to cancel the animation frame when the component unmounts
-        // or dependencies change.
-        return () => cancelAnimationFrame(animationFrameId);
-    }, [counterData, isDocLoading]);
-
-    return {count, isLoading: isDocLoading && count === null };
-}
-
 
 const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, onExport, mobileView, onSwitchToCode, onFeedbackClick }) => {
   const isMobile = useIsMobile();
   const { user } = useUser();
   const auth = useAuth();
-  const { count: deploymentCount, isLoading: isCounterLoading } = useDeploymentCounter();
 
 
   const handleLogout = () => {
@@ -119,12 +73,6 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
         <div className="flex items-center gap-2 md:gap-4">
             <Rocket className="h-6 w-6 text-primary" />
             <h1 className="text-base font-semibold md:text-xl font-headline">RunAndDeploy</h1>
-            <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-sm">
-                <span className="text-muted-foreground font-medium">Total Deploys</span>
-                <span className="font-semibold text-primary">
-                    {isCounterLoading || deploymentCount === null ? '...' : new Intl.NumberFormat().format(deploymentCount)}
-                </span>
-            </div>
         </div>
         <div className="flex items-center justify-end gap-1 md:gap-2">
             <TooltipProvider delayDuration={0}>
