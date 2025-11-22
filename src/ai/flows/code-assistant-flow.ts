@@ -1,3 +1,4 @@
+
 'use server';
 
 import {ai} from '@/ai/genkit';
@@ -24,7 +25,7 @@ export const codeAssistantFlow = ai.defineFlow(
   },
   async (input, streamingCallback) => {
     const {stream} = await ai.generate({
-      model: googleAI('gemini-1.5-flash'),
+      model: 'googleai/gemini-1.5-flash',
       prompt: `You are an expert web developer. The user will provide a prompt and you will generate the HTML, CSS, and JavaScript code to implement it.
 
       IMPORTANT:
