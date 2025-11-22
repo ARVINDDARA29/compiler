@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles } from 'lucide-react';
 import { runCodeAssistantFlow } from '@/ai/flows/code-assistant-flow';
 
+const API_KEY_STORAGE_KEY = 'gemini-api-key';
+
 interface AiAssistantDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,6 +31,22 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
   const [apiKey, setApiKey] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+
+  // Load API key from local storage on initial render
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+    if (storedApiKey) {
+      setApiKey(storedApiKey);
+    }
+  }, []);
+
+  // Save API key to local storage whenever it changes
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+    }
+  }, [apiKey]);
+
 
   const handleGenerate = async () => {
     if (!prompt) {
@@ -102,7 +120,7 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
             AI Code Assistant
           </DialogTitle>
           <DialogDescription>
-            Describe what you want to build. You will need a Gemini API key from Google AI Studio.
+            Describe what you want to build. Your Gemini API key from Google AI Studio will be saved in your browser.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
