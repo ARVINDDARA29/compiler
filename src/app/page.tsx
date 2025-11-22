@@ -108,9 +108,12 @@ export default function Home() {
     }
 
     setIsDeploying(true);
-    setDeployDialogOpen(false); // Close the dialog
+    setDeployDialogOpen(false);
 
     try {
+      // Wait for 45 seconds to simulate a long deployment process
+      await new Promise(resolve => setTimeout(resolve, 45000));
+
       const result = await deployToGithub({
         html: htmlCode,
         css: cssCode,
