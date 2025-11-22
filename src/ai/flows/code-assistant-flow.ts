@@ -2,12 +2,11 @@
 'use server';
 
 import {ai} from '@/ai/genkit';
-import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'zod';
 
 const CodeAssistantInputSchema = z.object({
   prompt: z.string(),
-  apiKey: z.string().optional(), // API key is now part of the input
+  apiKey: z.string(),
 });
 
 const CodeAssistantOutputSchema = z.object({
@@ -56,6 +55,6 @@ export const codeAssistantFlow = ai.defineFlow(
 );
 
 export async function runCodeAssistantFlow(prompt: string, apiKey: string) {
-  const {stream} = await codeAssistantFlow({prompt, apiKey});
-  return stream;
+    const {stream} = await codeAssistantFlow({prompt, apiKey});
+    return stream;
 }

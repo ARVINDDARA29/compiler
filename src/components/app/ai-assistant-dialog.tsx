@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -57,7 +58,13 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
         accumulatedJson += chunk;
       }
       
-      const parsed = JSON.parse(accumulatedJson);
+      // Attempt to find a valid JSON object within the accumulated text
+      const jsonMatch = accumulatedJson.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No valid JSON object found in the AI's response.");
+      }
+      
+      const parsed = JSON.parse(jsonMatch[0]);
       onCodeUpdate({
         html: parsed.html || '',
         css: parsed.css || '',
