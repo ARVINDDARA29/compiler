@@ -11,9 +11,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
 import { Loader2, Sparkles } from 'lucide-react';
 import { runCodeAssistantFlow } from '@/ai/flows/code-assistant-flow';
 
@@ -25,10 +25,9 @@ interface AiAssistantDialogProps {
 
 export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssistantDialogProps) {
   const [prompt, setPrompt] = useState('');
+  const [apiKey, setApiKey] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState<{ html?: string; css?: string; js?: string }>({});
   const { toast } = useToast();
-  const { user } = useUser();
 
   const handleGenerate = async () => {
     if (!prompt) {
@@ -39,12 +38,20 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
       });
       return;
     }
+     if (!apiKey) {
+      toast({
+        variant: 'destructive',
+        title: 'API Key is missing',
+        description: 'Please enter your Gemini API key to generate code.',
+      });
+      return;
+    }
     
     setIsGenerating(true);
     let accumulatedJson = '';
 
     try {
-      const stream = await runCodeAssistantFlow(prompt);
+      const stream = await runCodeAssistantFlow(prompt, apiKey);
       
       for await (const chunk of stream) {
         accumulatedJson += chunk;
@@ -52,9 +59,9 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
       
       const parsed = JSON.parse(accumulatedJson);
       onCodeUpdate({
-        html: parsed.html,
-        css: parsed.css,
-        js: parsed.js,
+        html: parsed.html || '',
+        css: parsed.css || '',
+        js: parsed.js || '',
       });
 
       onOpenChange(false);
@@ -64,7 +71,7 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
       toast({
         variant: 'destructive',
         title: 'Generation Failed',
-        description: 'Could not parse the AI response. Check the console for details.',
+        description: error instanceof Error ? error.message : 'Could not parse the AI response. Check the console for details.',
       });
     } finally {
       setIsGenerating(false);
@@ -73,6 +80,7 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
 
   useEffect(() => {
     if (!open) {
+      // Don't clear API key, but clear prompt
       setPrompt('');
       setIsGenerating(false);
     }
@@ -87,10 +95,21 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
             AI Code Assistant
           </DialogTitle>
           <DialogDescription>
-            Describe what you want to build, and the AI will generate the code for you. The existing code will be replaced.
+            Describe what you want to build. You will need a Gemini API key from Google AI Studio.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          <div className="grid w-full gap-1.5">
+            <Label htmlFor="gemini-api-key">Gemini API Key</Label>
+            <Input
+              id="gemini-api-key"
+              type="password"
+              placeholder="Enter your Gemini API key"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              disabled={isGenerating}
+            />
+          </div>
           <div className="grid w-full gap-1.5">
             <Label htmlFor="ai-prompt">Your Idea</Label>
             <Textarea
@@ -104,7 +123,7 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
           </div>
         </div>
         <DialogFooter>
-            <Button type="button" onClick={handleGenerate} disabled={isGenerating || !prompt}>
+            <Button type="button" onClick={handleGenerate} disabled={isGenerating || !prompt || !apiKey}>
                 {isGenerating ? (
                     <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

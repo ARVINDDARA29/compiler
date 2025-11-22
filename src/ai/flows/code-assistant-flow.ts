@@ -5,6 +5,7 @@ import {z} from 'zod';
 
 const CodeAssistantInputSchema = z.object({
   prompt: z.string(),
+  apiKey: z.string().optional(), // API key is now part of the input
 });
 
 const CodeAssistantOutputSchema = z.object({
@@ -38,6 +39,7 @@ export const codeAssistantFlow = ai.defineFlow(
       config: {
         temperature: 0.5,
       },
+      auth: input.apiKey, // Pass API key for authentication
     });
 
     let finalResult = '';
@@ -51,7 +53,7 @@ export const codeAssistantFlow = ai.defineFlow(
   }
 );
 
-export async function runCodeAssistantFlow(prompt: string) {
-  const {stream} = await codeAssistantFlow({prompt});
+export async function runCodeAssistantFlow(prompt: string, apiKey: string) {
+  const {stream} = await codeAssistantFlow({prompt, apiKey});
   return stream;
 }
