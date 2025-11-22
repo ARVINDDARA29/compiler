@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '../ui/dropdown-menu';
 import Link from 'next/link';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface AppHeaderProps {
   isDeploying: boolean;
@@ -198,6 +199,8 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                     </>
                 )}
             </TooltipProvider>
+
+             <ThemeToggle />
 
             {user && !isMobile && (
                 <DropdownMenu>
