@@ -1,6 +1,7 @@
 'use server';
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'zod';
 
 const CodeAssistantInputSchema = z.object({
@@ -22,8 +23,8 @@ export const codeAssistantFlow = ai.defineFlow(
     stream: true,
   },
   async (input, streamingCallback) => {
-    const { stream } = await ai.generate({
-      model: 'gemini-1.5-flash-latest',
+    const {stream} = await ai.generate({
+      model: googleAI('gemini-1.5-flash'),
       prompt: `You are an expert web developer. The user will provide a prompt and you will generate the HTML, CSS, and JavaScript code to implement it.
 
       IMPORTANT:
@@ -50,7 +51,7 @@ export const codeAssistantFlow = ai.defineFlow(
       }
     }
     return finalResult;
-  }
+  },
 );
 
 export async function runCodeAssistantFlow(prompt: string, apiKey: string) {
