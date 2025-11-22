@@ -40,7 +40,8 @@ export const codeAssistantFlow = ai.defineFlow(
       config: {
         temperature: 0.5,
       },
-      auth: input.apiKey, // Pass API key for authentication
+      // Use the provided API key for this specific call via the auth property.
+      auth: input.apiKey,
     });
 
     let finalResult = '';

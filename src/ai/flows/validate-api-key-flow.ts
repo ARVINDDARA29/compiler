@@ -30,7 +30,8 @@ export const validateApiKeyFlow = ai.defineFlow(
       const result = await ai.generate({
         model: 'googleai/gemini-1.5-flash',
         prompt: 'Say "hello".',
-        auth: input.apiKey, // Use the provided API key for this specific call
+        // Use the provided API key for this specific call via the auth property.
+        auth: input.apiKey, 
         config: {
             temperature: 0,
         },
