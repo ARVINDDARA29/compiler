@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -47,7 +48,7 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
     if (open) {
         setConnectionState('UNVERIFIED');
     }
-  }, [open, apiKey]);
+  }, [open]);
 
   const handleTestConnection = async () => {
     if (!apiKey) {
@@ -120,14 +121,10 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
     }
   };
 
+  // Auto-check connection if a key exists when dialog opens
   useEffect(() => {
-    if (!open) {
-      setPrompt('');
-      setIsGenerating(false);
-      // Keep connection state for next time, but reset if key was invalid
-      if(connectionState === 'ERROR') {
-        setConnectionState('UNVERIFIED');
-      }
+    if (open && apiKey) {
+        handleTestConnection();
     }
   }, [open]);
   
@@ -142,7 +139,7 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
             AI Code Assistant
           </DialogTitle>
           <DialogDescription>
-            Enter your Gemini API key from Google AI Studio to connect and generate code.
+            Enter your Gemini API key from Google AI Studio to connect and generate code. The key will be saved in your browser.
           </DialogDescription>
         </DialogHeader>
         
@@ -155,12 +152,16 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
                 type="password"
                 placeholder="Enter your Gemini API key"
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  // When user types, connection becomes unverified
+                  setConnectionState('UNVERIFIED');
+                }}
                 disabled={isBusy}
               />
               <Button onClick={handleTestConnection} disabled={isBusy || !apiKey} variant="outline">
                 {connectionState === 'CHECKING' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Check Connection
+                Check Key
               </Button>
             </div>
             {connectionState === 'CONNECTED' && <p className="text-sm text-green-500 flex items-center gap-1"><CheckCircle className="h-4 w-4" /> Connected</p>}

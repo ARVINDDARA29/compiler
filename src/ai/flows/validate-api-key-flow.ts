@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileoverview A flow to validate a Gemini API key.
@@ -52,7 +53,10 @@ export const validateApiKeyFlow = ai.defineFlow(
             errorMessage = 'The provided API key is not valid. Please check the key and try again.';
          } else if (e.message.includes('permission')) {
             errorMessage = 'The API key is missing required permissions for the Gemini API.';
-         } else {
+         } else if (e.message.includes('Please pass in the API key')) {
+            errorMessage = e.message; // Keep the original detailed error for this case
+         }
+         else {
             errorMessage = e.message;
          }
       }
