@@ -3,7 +3,7 @@
 
 import type { FC } from 'react';
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, MoreVertical } from 'lucide-react';
+import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, Download, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser, useAuth, useFirebase, useDoc } from '@/firebase';
@@ -19,6 +19,7 @@ interface AppHeaderProps {
   onDeploy: () => void;
   onRun: () => void;
   onImport: () => void;
+  onExport: () => void;
   mobileView: 'editor' | 'preview';
   onSwitchToCode: () => void;
   onFeedbackClick: () => void;
@@ -69,7 +70,7 @@ function useDeploymentCounter() {
 }
 
 
-const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, mobileView, onSwitchToCode, onFeedbackClick }) => {
+const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, onExport, mobileView, onSwitchToCode, onFeedbackClick }) => {
   const isMobile = useIsMobile();
   const { user } = useUser();
   const auth = useAuth();
@@ -168,6 +169,10 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                                     <Upload className="mr-2 h-4 w-4" />
                                     <span>Import Files</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={onExport}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    <span>Export Project</span>
+                                </DropdownMenuItem>
                                 {user ? (
                                 <UserMenuItems />
                                 ) : (
@@ -193,6 +198,17 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                             </TooltipTrigger>
                             <TooltipContent>
                                 <p>Import Files</p>
+                            </TooltipContent>
+                        </Tooltip>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={onExport} variant="outline" size="sm" className="flex-shrink-0">
+                                    <Download className="h-4 w-4 md:mr-2" />
+                                    <span className="hidden md:inline">Export</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Export Project</p>
                             </TooltipContent>
                         </Tooltip>
                         
@@ -256,5 +272,3 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
 };
 
 export default AppHeader;
-
-    

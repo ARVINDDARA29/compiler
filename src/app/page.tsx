@@ -45,6 +45,7 @@ export default function Home() {
   const { user } = useUser();
   const { firestore } = useFirebase();
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
 
   const handleRunCode = useCallback(() => {
@@ -169,6 +170,70 @@ export default function Home() {
     // We don't auto-run after AI generation, let the user click "Run"
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    for (const file of Array.from(files)) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        if (file.name.endsWith('.html')) {
+          setHtmlCode(content);
+        } else if (file.name.endsWith('.css')) {
+          setCssCode(content);
+        } else if (file.name.endsWith('.js')) {
+          setJsCode(content);
+        }
+      };
+      reader.readAsText(file);
+    }
+    toast({ title: "Files Loaded", description: "Your code has been imported into the editors."});
+    // Reset file input to allow importing the same file again
+    event.target.value = '';
+  };
+
+  const handleExportClick = () => {
+    const isFullHtml = htmlCode.trim().toLowerCase().startsWith('<!doctype html>') || htmlCode.trim().toLowerCase().startsWith('<html>');
+  
+    const fileContent = isFullHtml 
+      ? htmlCode // Assume CSS/JS are already inlined if it's a full document
+      : `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Project</title>
+    <style>
+      ${cssCode}
+    </style>
+  </head>
+  <body>
+    ${htmlCode}
+    <script>
+      ${jsCode}
+    </script>
+  </body>
+  </html>
+    `.trim();
+    
+    const blob = new Blob([fileContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'index.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: "Export Successful", description: "index.html has been downloaded." });
+  };
+
 
   const EditorView = (
       <CodeEditor
@@ -192,7 +257,8 @@ export default function Home() {
           isRunning={isRunning}
           onDeploy={handleDeployClick}
           onRun={handleRunCode}
-          onImport={() => {}}
+          onImport={handleImportClick}
+          onExport={handleExportClick}
           mobileView={mobileView}
           onSwitchToCode={() => setMobileView('editor')}
           onFeedbackClick={() => {}}
@@ -200,6 +266,14 @@ export default function Home() {
         <main className="flex-1 overflow-hidden">
           {mobileView === 'editor' ? EditorView : PreviewView}
         </main>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          onChange={handleFileChange}
+          multiple 
+          accept=".html,.css,.js" 
+          className="hidden" 
+        />
       </div>
     );
   }
@@ -214,6 +288,14 @@ export default function Home() {
         onOpenChange={setDeployDialogOpen}
         onConfirm={handleConfirmDeploy}
     />
+    <input 
+      type="file" 
+      ref={fileInputRef} 
+      onChange={handleFileChange}
+      multiple 
+      accept=".html,.css,.js" 
+      className="hidden" 
+    />
 
     <div className="flex h-screen flex-col bg-background">
       <AppHeader
@@ -221,7 +303,8 @@ export default function Home() {
         isRunning={isRunning}
         onDeploy={handleDeployClick}
         onRun={handleRunCode}
-        onImport={() => {}}
+        onImport={handleImportClick}
+        onExport={handleExportClick}
         mobileView="editor"
         onSwitchToCode={() => {}}
         onFeedbackClick={() => {}}
