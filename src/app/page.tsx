@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -18,7 +19,7 @@ const DEFAULT_HTML = `
 <div class="flex items-center justify-center h-full">
   <div class="text-center space-y-4">
     <h1 class="text-4xl font-bold">Welcome to RunAndDeploy</h1>
-    <p class="text-muted-foreground">Start editing the code to see your changes live!</p>
+    <p class="text-muted-foreground">Click the "Run" button to see your changes live!</p>
   </div>
 </div>
 `;
@@ -49,6 +50,11 @@ export default function Home() {
       <html>
         <head>
           <style>${cssCode}</style>
+          <script>
+            window.addEventListener('error', function(event) {
+              console.error('Error in iframe:', event.error);
+            });
+          <\/script>
         </head>
         <body>
           ${htmlCode}
@@ -65,8 +71,20 @@ export default function Home() {
   }, [htmlCode, cssCode, jsCode, isMobile]);
 
   useEffect(() => {
-    handleRunCode();
-  }, [htmlCode, cssCode, jsCode, handleRunCode]);
+    // Initial run on page load
+    const initialSrc = `
+      <html>
+        <head>
+          <style>${cssCode}</style>
+        </head>
+        <body>
+          ${htmlCode}
+        </body>
+      </html>
+    `;
+    setSrcDoc(initialSrc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   const handleDeploy = async () => {
@@ -139,6 +157,7 @@ export default function Home() {
     setHtmlCode(codes.html || '');
     setCssCode(codes.css || '');
     setJsCode(codes.js || '');
+    // We don't auto-run after AI generation, let the user click "Run"
   };
 
 
