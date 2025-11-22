@@ -27,11 +27,12 @@ import { setDoc, doc } from 'firebase/firestore';
 interface AuthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onFirstSignup?: () => void;
 }
 
 type AuthMode = 'login' | 'signup';
 
-export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
+export function AuthDialog({ open, onOpenChange, onFirstSignup }: AuthDialogProps) {
   const [authMode, setAuthMode] = useState<AuthMode>('signup');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -43,6 +44,9 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
 
   const handleAuthSuccess = (user: User, isNewUser = false) => {
     if (isNewUser && firestore) {
+      // Check if this is the first signup on this device
+      const isFirstSignupEver = !localStorage.getItem('ultraPrimeAwarded');
+      
       updateProfile(user, { displayName: name }).then(() => {
           const userDocRef = doc(firestore, 'users', user.uid);
           const userData = {
@@ -61,7 +65,12 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
       }).catch(error => {
           toast({ variant: 'destructive', title: 'Error', description: 'Could not update user profile.' });
       });
-      toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
+
+      if (isFirstSignupEver) {
+        onFirstSignup?.();
+      } else {
+        toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
+      }
 
     } else {
       toast({ title: 'Login successful!', description: 'You can now deploy your project.' });

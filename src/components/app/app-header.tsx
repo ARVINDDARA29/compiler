@@ -3,7 +3,7 @@
 
 import type { FC } from 'react';
 import React from 'react';
-import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, Download, MoreVertical } from 'lucide-react';
+import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, Download, MoreVertical, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser, useAuth } from '@/firebase';
@@ -12,10 +12,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import Link from 'next/link';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface AppHeaderProps {
   isDeploying: boolean;
   isRunning: boolean;
+  isUltraPrime: boolean;
   onDeploy: () => void;
   onRun: () => void;
   onImport: () => void;
@@ -25,8 +28,7 @@ interface AppHeaderProps {
   onFeedbackClick: () => void;
 }
 
-
-const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, onExport, mobileView, onSwitchToCode, onFeedbackClick }) => {
+const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, onExport, mobileView, onSwitchToCode, onFeedbackClick, isUltraPrime }) => {
   const isMobile = useIsMobile();
   const { user } = useUser();
   const auth = useAuth();
@@ -43,7 +45,15 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
       {user && (
         <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                    {isUltraPrime && (
+                         <Badge variant="outline" className="h-5 border-primary/60 bg-primary/10 text-primary animate-pulse">
+                            <Crown className="mr-1 h-3 w-3" />
+                            Prime
+                        </Badge>
+                    )}
+                </div>
                 <p className="text-xs leading-none text-muted-foreground">
                     {user.email}
                 </p>
@@ -206,7 +216,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-8 w-8 rounded-full flex-shrink-0">
-                            <Avatar className="h-8 w-8">
+                            <Avatar className={cn('h-8 w-8', isUltraPrime && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}>
                                 <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
                                 <AvatarFallback>{user.displayName?.[0]?.toUpperCase() ?? <UserIcon className='h-4 w-4' />}</AvatarFallback>
                             </Avatar>
