@@ -11,7 +11,6 @@ import DeployingOverlay from '@/components/app/deploying-overlay';
 import { useUser, useFirebase, errorEmitter } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { AiAssistantDialog } from '@/components/app/ai-assistant-dialog';
 import { deployToGithub } from '@/app/actions/deploy';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -24,7 +23,6 @@ export default function Home() {
   const [isRunning, setIsRunning] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
-  const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const [showDeployingOverlay, setShowDeployingOverlay] = useState(false);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
 
@@ -129,16 +127,6 @@ export default function Home() {
     }
   };
 
-  const handleAiCodeUpdate = (codes: { html?: string; css?: string; js?: string }) => {
-    setHtmlCode(codes.html || '');
-    setCssCode(codes.css || '');
-    setJsCode(codes.js || '');
-    toast({
-      title: 'AI Assistant',
-      description: 'Code has been updated in the editors.',
-    });
-  };
-
   const handleImport = () => {
     importFileRef.current?.click();
   };
@@ -227,7 +215,6 @@ export default function Home() {
                         setCssCode={setCssCode}
                         jsCode={jsCode}
                         setJsCode={setJsCode}
-                        onAiAssistClick={() => setIsAiAssistantOpen(true)}
                     />
                 ) : (
                     <LivePreview ref={previewRef} srcDoc={srcDoc} />
@@ -243,7 +230,6 @@ export default function Home() {
                         setCssCode={setCssCode}
                         jsCode={jsCode}
                         setJsCode={setJsCode}
-                        onAiAssistClick={() => setIsAiAssistantOpen(true)}
                     />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
@@ -260,11 +246,6 @@ export default function Home() {
         onOpenChange={setIsDeployDialogOpen} 
         onConfirm={handleConfirmDeploy}
         isDeploying={isDeploying} 
-      />
-      <AiAssistantDialog
-        open={isAiAssistantOpen}
-        onOpenChange={setIsAiAssistantOpen}
-        onCodeUpdate={handleAiCodeUpdate}
       />
     </div>
   );
