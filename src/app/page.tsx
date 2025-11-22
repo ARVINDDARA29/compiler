@@ -14,6 +14,8 @@ import { AuthDialog } from '@/components/app/auth-dialog';
 import { useUser, useFirebase } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { AiAssistantDialog } from '@/components/app/ai-assistant-dialog';
+import { DeployDialog } from '@/components/app/deploy-dialog';
+
 
 const DEFAULT_HTML = `
 <div class="flex items-center justify-center h-full">
@@ -35,6 +37,7 @@ export default function Home() {
 
   const [isAuthDialogOpen, setAuthDialogOpen] = useState(false);
   const [isAiDialogOpen, setAiDialogOpen] = useState(false);
+  const [isDeployDialogOpen, setDeployDialogOpen] = useState(false);
 
   const isMobile = useIsMobile();
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
@@ -86,14 +89,15 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
-  const handleDeploy = async () => {
+  const handleDeployClick = () => {
     if (!user) {
       setAuthDialogOpen(true);
       return;
     }
-
-    const projectName = prompt('Enter a name for your project (e.g., my-awesome-site):');
+    setDeployDialogOpen(true);
+  };
+  
+  const handleConfirmDeploy = async (projectName: string, addWatermark: boolean) => {
     if (!projectName || projectName.trim().length === 0) {
       toast({
         variant: 'destructive',
@@ -104,6 +108,7 @@ export default function Home() {
     }
 
     setIsDeploying(true);
+    setDeployDialogOpen(false); // Close the dialog
 
     try {
       const result = await deployToGithub({
@@ -111,10 +116,10 @@ export default function Home() {
         css: cssCode,
         js: jsCode,
         projectName,
-        addWatermark: true,
+        addWatermark,
       });
 
-      if (result.success && result.url && firestore) {
+      if (result.success && result.url && firestore && user) {
         // Save to Firestore
         const siteData = {
           userId: user.uid,
@@ -122,7 +127,8 @@ export default function Home() {
           url: result.url,
           deployedAt: serverTimestamp(),
         };
-        const siteRef = doc(firestore, 'sites', `${user.uid}_${projectName}`);
+        // Use a more robust doc ID to prevent overwrites on same project name by different users
+        const siteRef = doc(firestore, 'sites', `${user.uid}-${projectName.replace(/\s+/g, '-').toLowerCase()}`);
         await setDoc(siteRef, siteData);
 
         toast({
@@ -181,7 +187,7 @@ export default function Home() {
         <AppHeader
           isDeploying={isDeploying}
           isRunning={isRunning}
-          onDeploy={handleDeploy}
+          onDeploy={handleDeployClick}
           onRun={handleRunCode}
           onImport={() => {}}
           mobileView={mobileView}
@@ -200,12 +206,17 @@ export default function Home() {
     {isDeploying && <DeployingOverlay />}
     <AuthDialog open={isAuthDialogOpen} onOpenChange={setAuthDialogOpen} />
     <AiAssistantDialog open={isAiDialogOpen} onOpenChange={setAiDialogOpen} onCodeUpdate={handleAiCodeUpdate} />
+    <DeployDialog 
+        open={isDeployDialogOpen} 
+        onOpenChange={setDeployDialogOpen}
+        onConfirm={handleConfirmDeploy}
+    />
 
     <div className="flex h-screen flex-col bg-background">
       <AppHeader
         isDeploying={isDeploying}
         isRunning={isRunning}
-        onDeploy={handleDeploy}
+        onDeploy={handleDeployClick}
         onRun={handleRunCode}
         onImport={() => {}}
         mobileView="editor"
