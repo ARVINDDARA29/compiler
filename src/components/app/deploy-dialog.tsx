@@ -32,6 +32,14 @@ export function DeployDialog({
   const [projectName, setProjectName] = useState('');
   const [addWatermark, setAddWatermark] = useState(true);
 
+  const handleProjectNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const sanitizedValue = e.target.value
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-z0-9-]/g, ''); // Remove any other invalid characters
+    setProjectName(sanitizedValue);
+  };
+
   const handleConfirm = () => {
     onConfirm(projectName, addWatermark);
   };
@@ -62,7 +70,7 @@ export function DeployDialog({
             <Input
               id="project-name"
               value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
+              onChange={handleProjectNameChange}
               placeholder="e.g., my-awesome-site"
               autoComplete="off"
             />
