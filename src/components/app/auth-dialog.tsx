@@ -44,9 +44,6 @@ export function AuthDialog({ open, onOpenChange, onFirstSignup }: AuthDialogProp
 
   const handleAuthSuccess = (user: User, isNewUser = false) => {
     if (isNewUser && firestore) {
-      // Check if this is the first signup on this device
-      const isFirstSignupEver = !localStorage.getItem('ultraPrimeAwarded');
-      
       updateProfile(user, { displayName: name }).then(() => {
           const userDocRef = doc(firestore, 'users', user.uid);
           const userData = {
@@ -66,11 +63,7 @@ export function AuthDialog({ open, onOpenChange, onFirstSignup }: AuthDialogProp
           toast({ variant: 'destructive', title: 'Error', description: 'Could not update user profile.' });
       });
 
-      if (isFirstSignupEver) {
-        onFirstSignup?.();
-      } else {
-        toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
-      }
+      toast({ title: 'Signup successful!', description: 'You can now deploy your project.' });
 
     } else {
       toast({ title: 'Login successful!', description: 'You can now deploy your project.' });

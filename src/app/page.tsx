@@ -15,8 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { deployToGithub } from '@/app/actions/deploy';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { UltraPrimeWelcome } from '@/components/app/ultra-prime-welcome';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 
 const defaultHtml = `
@@ -104,8 +103,6 @@ export default function Home() {
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [showDeployingOverlay, setShowDeployingOverlay] = useState(false);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
-  const [showUltraPrimeWelcome, setShowUltraPrimeWelcome] = useState(false);
-  const [isUltraPrime, setIsUltraPrime] = useState(false);
 
 
   const { toast } = useToast();
@@ -115,26 +112,6 @@ export default function Home() {
   const previewRef = useRef<HTMLIFrameElement>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
   
-  useEffect(() => {
-    // Check for prime status on load
-    if (localStorage.getItem('ultraPrimeAwarded') === 'true') {
-        setIsUltraPrime(true);
-    }
-  }, []);
-
-  const handleFirstSignup = () => {
-    localStorage.setItem('ultraPrimeAwarded', 'true');
-    setShowUltraPrimeWelcome(true);
-  };
-
-  const handlePrimeWelcomeConfirm = () => {
-    setShowUltraPrimeWelcome(false);
-    setIsUltraPrime(true);
-    toast({
-        title: 'Subscription Activated!',
-        description: 'Your Ultra Prime status is now active. Enjoy the perks!',
-    });
-  };
 
   const runCode = useCallback(() => {
     setIsRunning(true);
@@ -306,13 +283,11 @@ a.click();
     <div className="flex h-screen w-full flex-col bg-background text-foreground">
       <AnimatePresence>
         {showDeployingOverlay && <DeployingOverlay />}
-        {showUltraPrimeWelcome && <UltraPrimeWelcome onConfirm={handlePrimeWelcomeConfirm} />}
       </AnimatePresence>
 
       <AppHeader
         isDeploying={isDeploying}
         isRunning={isRunning}
-        isUltraPrime={isUltraPrime}
         onDeploy={handleDeployClick}
         onRun={runCode}
         onImport={handleImport}
@@ -362,7 +337,6 @@ a.click();
       <AuthDialog 
         open={isAuthDialogOpen} 
         onOpenChange={setIsAuthDialogOpen} 
-        onFirstSignup={handleFirstSignup}
       />
       <DeployDialog 
         open={isDeployDialogOpen} 

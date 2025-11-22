@@ -18,7 +18,6 @@ import { Badge } from '@/components/ui/badge';
 interface AppHeaderProps {
   isDeploying: boolean;
   isRunning: boolean;
-  isUltraPrime: boolean;
   onDeploy: () => void;
   onRun: () => void;
   onImport: () => void;
@@ -28,7 +27,7 @@ interface AppHeaderProps {
   onFeedbackClick: () => void;
 }
 
-const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, onExport, mobileView, onSwitchToCode, onFeedbackClick, isUltraPrime }) => {
+const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, onExport, mobileView, onSwitchToCode, onFeedbackClick }) => {
   const isMobile = useIsMobile();
   const { user } = useUser();
   const auth = useAuth();
@@ -47,12 +46,6 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
             <div className="flex flex-col space-y-1">
                 <div className="flex items-center gap-2">
                     <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                    {isUltraPrime && (
-                         <Badge variant="outline" className="h-5 border-primary/60 bg-primary/10 text-primary animate-pulse">
-                            <Crown className="mr-1 h-3 w-3" />
-                            Prime
-                        </Badge>
-                    )}
                 </div>
                 <p className="text-xs leading-none text-muted-foreground">
                     {user.email}
@@ -216,7 +209,7 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-8 w-8 rounded-full flex-shrink-0">
-                            <Avatar className={cn('h-8 w-8', isUltraPrime && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}>
+                            <Avatar className={'h-8 w-8'}>
                                 <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
                                 <AvatarFallback>{user.displayName?.[0]?.toUpperCase() ?? <UserIcon className='h-4 w-4' />}</AvatarFallback>
                             </Avatar>
