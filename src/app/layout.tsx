@@ -2,12 +2,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'RunAndDeploy',
-  description: 'A simple HTML, CSS, and JavaScript editor with live preview and one-click deployment to GitHub Pages.',
-  icons: null,
+  title: 'AI Code Architect',
+  description: 'An AI-powered tool to generate HTML, CSS, and JavaScript from a text prompt.',
 };
 
 export default function RootLayout({
@@ -18,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -29,10 +28,8 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased">
-        <FirebaseClientProvider>
+      <body>
           {children}
-        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>
