@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,10 +14,13 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle, XCircle } from 'lucide-react';
 import { runCodeAssistantFlow } from '@/ai/flows/code-assistant-flow';
+import { validateApiKey } from '@/ai/flows/validate-api-key-flow';
 
 const API_KEY_STORAGE_KEY = 'gemini-api-key';
+
+type ConnectionState = 'UNVERIFIED' | 'CHECKING' | 'CONNECTED' | 'ERROR';
 
 interface AiAssistantDialogProps {
   open: boolean;
@@ -30,9 +32,9 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
   const [prompt, setPrompt] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [connectionState, setConnectionState] = useState<ConnectionState>('UNVERIFIED');
   const { toast } = useToast();
 
-  // Load API key from local storage on initial render
   useEffect(() => {
     const storedApiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
     if (storedApiKey) {
@@ -40,29 +42,45 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
     }
   }, []);
 
-  // Save API key to local storage whenever it changes
   useEffect(() => {
-    if (apiKey) {
-      localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+    // When the dialog opens or API key changes, reset the connection state
+    if (open) {
+        setConnectionState('UNVERIFIED');
     }
-  }, [apiKey]);
+  }, [open, apiKey]);
 
-
-  const handleGenerate = async () => {
-    if (!prompt) {
-      toast({
-        variant: 'destructive',
-        title: 'Prompt is empty',
-        description: 'Please tell the assistant what you want to build.',
-      });
+  const handleTestConnection = async () => {
+    if (!apiKey) {
+      toast({ variant: 'destructive', title: 'API Key is missing' });
       return;
     }
-     if (!apiKey) {
+    setConnectionState('CHECKING');
+    try {
+      const result = await validateApiKey(apiKey);
+      if (result.success) {
+        setConnectionState('CONNECTED');
+        localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+        toast({ title: 'Connection Successful', description: 'You can now generate code.' });
+      } else {
+        throw new Error(result.error || 'Invalid API Key.');
+      }
+    } catch (error) {
+      setConnectionState('ERROR');
       toast({
         variant: 'destructive',
-        title: 'API Key is missing',
-        description: 'Please enter your Gemini API key to generate code.',
+        title: 'Connection Failed',
+        description: error instanceof Error ? error.message : 'Unable to connect to Gemini.',
       });
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (connectionState !== 'CONNECTED') {
+      toast({ variant: 'destructive', title: 'Not Connected', description: 'Please validate your API key first.' });
+      return;
+    }
+    if (!prompt) {
+      toast({ variant: 'destructive', title: 'Prompt is empty', description: 'Please tell the assistant what you want to build.' });
       return;
     }
     
@@ -76,7 +94,6 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
         accumulatedJson += chunk;
       }
       
-      // Attempt to find a valid JSON object within the accumulated text
       const jsonMatch = accumulatedJson.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error("No valid JSON object found in the AI's response.");
@@ -96,7 +113,7 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
       toast({
         variant: 'destructive',
         title: 'Generation Failed',
-        description: error instanceof Error ? error.message : 'Could not parse the AI response. Check the console for details.',
+        description: error instanceof Error ? error.message : "Could not parse the AI response. Check console for details.",
       });
     } finally {
       setIsGenerating(false);
@@ -105,11 +122,16 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
 
   useEffect(() => {
     if (!open) {
-      // Don't clear API key, but clear prompt
       setPrompt('');
       setIsGenerating(false);
+      // Keep connection state for next time, but reset if key was invalid
+      if(connectionState === 'ERROR') {
+        setConnectionState('UNVERIFIED');
+      }
     }
   }, [open]);
+  
+  const isBusy = isGenerating || connectionState === 'CHECKING';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,22 +142,32 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
             AI Code Assistant
           </DialogTitle>
           <DialogDescription>
-            Describe what you want to build. Your Gemini API key from Google AI Studio will be saved in your browser.
+            Enter your Gemini API key from Google AI Studio to connect and generate code.
           </DialogDescription>
         </DialogHeader>
+        
         <div className="grid gap-4 py-4">
-          <div className="grid w-full gap-1.5">
+          <div className="grid w-full gap-2">
             <Label htmlFor="gemini-api-key">Gemini API Key</Label>
-            <Input
-              id="gemini-api-key"
-              type="password"
-              placeholder="Enter your Gemini API key"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              disabled={isGenerating}
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                id="gemini-api-key"
+                type="password"
+                placeholder="Enter your Gemini API key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                disabled={isBusy}
+              />
+              <Button onClick={handleTestConnection} disabled={isBusy || !apiKey} variant="outline">
+                {connectionState === 'CHECKING' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Check Connection
+              </Button>
+            </div>
+            {connectionState === 'CONNECTED' && <p className="text-sm text-green-500 flex items-center gap-1"><CheckCircle className="h-4 w-4" /> Connected</p>}
+            {connectionState === 'ERROR' && <p className="text-sm text-destructive flex items-center gap-1"><XCircle className="h-4 w-4" /> Connection failed. Please check your key.</p>}
           </div>
-          <div className="grid w-full gap-1.5">
+          
+          <div className="grid w-full gap-1.5 mt-4">
             <Label htmlFor="ai-prompt">Your Idea</Label>
             <Textarea
               id="ai-prompt"
@@ -143,12 +175,13 @@ export function AiAssistantDialog({ open, onOpenChange, onCodeUpdate }: AiAssist
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
-              disabled={isGenerating}
+              disabled={isBusy || connectionState !== 'CONNECTED'}
             />
           </div>
         </div>
+
         <DialogFooter>
-            <Button type="button" onClick={handleGenerate} disabled={isGenerating || !prompt || !apiKey}>
+            <Button type="button" onClick={handleGenerate} disabled={isBusy || connectionState !== 'CONNECTED' || !prompt}>
                 {isGenerating ? (
                     <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
