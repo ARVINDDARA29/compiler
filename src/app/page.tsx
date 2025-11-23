@@ -10,6 +10,7 @@ import { AuthDialog } from '@/components/app/auth-dialog';
 import { DeployDialog } from '@/components/app/deploy-dialog';
 import DeployingOverlay from '@/components/app/deploying-overlay';
 import { FeedbackDialog } from '@/components/app/feedback-dialog';
+import { V2AnnouncementDialog } from '@/components/app/v2-announcement-dialog';
 import { useUser, useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -103,6 +104,7 @@ export default function Home() {
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [showDeployingOverlay, setShowDeployingOverlay] = useState(false);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
+  const [isV2AnnouncementOpen, setIsV2AnnouncementOpen] = useState(false);
 
 
   const { toast } = useToast();
@@ -112,6 +114,14 @@ export default function Home() {
   const previewRef = useRef<HTMLIFrameElement>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
   
+  useEffect(() => {
+    if (user) {
+        const hasSeenV2Announcement = localStorage.getItem('hasSeenV2Announcement');
+        if (!hasSeenV2Announcement) {
+            setIsV2AnnouncementOpen(true);
+        }
+    }
+  }, [user]);
 
   const runCode = useCallback(() => {
     setIsRunning(true);
@@ -382,6 +392,10 @@ export default function Home() {
       <FeedbackDialog
         open={isFeedbackDialogOpen}
         onOpenChange={setIsFeedbackDialogOpen}
+      />
+      <V2AnnouncementDialog
+        open={isV2AnnouncementOpen}
+        onOpenChange={setIsV2AnnouncementOpen}
       />
     </div>
   );
