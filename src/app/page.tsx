@@ -14,7 +14,7 @@ import { useUser, useFirebase, errorEmitter, FirestorePermissionError } from '@/
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { deployToCloudflare } from '@/app/actions/deploy';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { AnimatePresence } from 'framer-motion';
 
 
@@ -165,19 +165,31 @@ export default function Home() {
     }
 
     try {
-      // Short delay for better UX, can be adjusted or removed
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const enableUserSpecificUrl = JSON.parse(localStorage.getItem('enableUserSpecificUrl') || 'false');
+      const enableUserSpecificUrl = JSON.parse(localStorage.getItem('enableUserSpecificUrl') ?? 'true');
       let finalProjectName = projectName;
 
       if (enableUserSpecificUrl && user.displayName) {
         const sanitizedUserName = user.displayName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        finalProjectName = `${sanitizedUserName}-${projectName}`; // Using a hyphen separator
+        finalProjectName = `${sanitizedUserName}-${projectName}`;
       }
       
-      const siteId = `${user.uid}-${finalProjectName.replace('/', '-')}`;
+      const siteId = finalProjectName; // The unique ID is now the final project name
+      const siteRef = doc(firestore, 'sites', siteId);
 
+      // Check if a site with this name already exists
+      const docSnap = await getDoc(siteRef);
+      if (docSnap.exists()) {
+        toast({
+          variant: 'destructive',
+          title: 'Deployment Failed',
+          description: `The project name "${finalProjectName}" is already taken. Please choose a different name.`,
+        });
+        setIsDeploying(false);
+        setShowDeployingOverlay(false);
+        return;
+      }
+
+      // If name is available, proceed with deployment
       const result = await deployToCloudflare({
         html: htmlCode,
         css: cssCode,
@@ -194,7 +206,7 @@ export default function Home() {
           url: result.url,
           deployedAt: serverTimestamp(),
         };
-        const siteRef = doc(firestore, 'sites', siteId);
+        
         await setDoc(siteRef, siteData).catch(err => {
              const path = siteRef.path;
              const operation = 'create';

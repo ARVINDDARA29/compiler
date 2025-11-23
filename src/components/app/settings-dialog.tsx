@@ -26,7 +26,7 @@ export function SettingsDialog({
   onOpenChange,
   onConfirm,
 }: SettingsDialogProps) {
-  const [enableUserSpecificUrl, setEnableUserSpecificUrl] = useState(false);
+  const [enableUserSpecificUrl, setEnableUserSpecificUrl] = useState(true);
 
   const handleConfirm = () => {
     onConfirm(enableUserSpecificUrl);
@@ -35,9 +35,12 @@ export function SettingsDialog({
   
   useEffect(() => {
     if (open) {
+      // Default to 'true' if the value is not found in localStorage
       const storedValue = localStorage.getItem('enableUserSpecificUrl');
-      if (storedValue) {
+      if (storedValue !== null) {
         setEnableUserSpecificUrl(JSON.parse(storedValue));
+      } else {
+        setEnableUserSpecificUrl(true);
       }
     }
   }, [open]);
@@ -69,7 +72,7 @@ export function SettingsDialog({
               htmlFor="enable-user-specific-url"
               className="text-sm font-normal"
             >
-              Enable User-Specific URL (e.g., /sites/USER_NAME/project-name)
+              Enable User-Specific URL (e.g., your-name-project-name)
             </Label>
           </div>
         </div>
