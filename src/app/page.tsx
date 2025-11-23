@@ -13,7 +13,7 @@ import { FeedbackDialog } from '@/components/app/feedback-dialog';
 import { useUser, useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { deployToGithub } from '@/app/actions/deploy';
+import { deployToCloudflare } from '@/app/actions/deploy';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { AnimatePresence } from 'framer-motion';
 
@@ -153,25 +153,48 @@ export default function Home() {
     setIsDeploying(true);
     setShowDeployingOverlay(true);
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 45000));
+    if (!user || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'Please log in to deploy.',
+      });
+      setIsDeploying(false);
+      setShowDeployingOverlay(false);
+      return;
+    }
 
-      const result = await deployToGithub({
+    try {
+      // Short delay for better UX, can be adjusted or removed
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const enableUserSpecificUrl = JSON.parse(localStorage.getItem('enableUserSpecificUrl') || 'false');
+      let finalProjectName = projectName;
+
+      if (enableUserSpecificUrl && user.displayName) {
+        const sanitizedUserName = user.displayName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        finalProjectName = `${sanitizedUserName}-${projectName}`; // Using a hyphen separator
+      }
+      
+      const siteId = `${user.uid}-${finalProjectName.replace('/', '-')}`;
+
+      const result = await deployToCloudflare({
         html: htmlCode,
         css: cssCode,
         js: jsCode,
-        projectName,
-        addWatermark
+        projectName: finalProjectName,
+        addWatermark,
+        siteId,
       });
 
-      if (result.success && result.url && firestore && user) {
+      if (result.success && result.url) {
         const siteData = {
           userId: user.uid,
-          projectName: projectName,
+          projectName: finalProjectName,
           url: result.url,
           deployedAt: serverTimestamp(),
         };
-        const siteRef = doc(firestore, 'sites', `${user.uid}-${projectName}`);
+        const siteRef = doc(firestore, 'sites', siteId);
         await setDoc(siteRef, siteData).catch(err => {
              const path = siteRef.path;
              const operation = 'create';
@@ -184,7 +207,7 @@ export default function Home() {
           title: 'Deployment Successful!',
           description: (
             <span>
-              Your site is live at:{' '}
+              Your site is live at: {' '}
               <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline">
                 {result.url}
               </a>
@@ -264,7 +287,7 @@ export default function Home() {
     a.href = url;
     a.download = 'index.html';
     document.body.appendChild(a);
-a.click();
+    a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast({ title: 'Project Exported', description: 'index.html has been downloaded.' });

@@ -3,9 +3,7 @@
 
 import { z } from 'zod';
 
-const REPO_OWNER = 'adbossappmaker';
-const REPO_NAME = 'sites';
-const BRANCH = 'main';
+const CLOUDFLARE_API_URL = 'https://arvindbishnoi.runanddeploy.workers.dev/api/deploy';
 
 const schema = z.object({
   html: z.string(),
@@ -13,6 +11,7 @@ const schema = z.object({
   js: z.string(),
   projectName: z.string().min(1, 'Project name is required.'),
   addWatermark: z.boolean(),
+  siteId: z.string(),
 });
 
 type DeployResult = {
@@ -21,16 +20,7 @@ type DeployResult = {
   url?: string;
 };
 
-async function getGitHubToken(): Promise<string> {
-    const token = process.env.GITHUB_TOKEN!;
-    if (!token) {
-        throw new Error('GitHub API token not found. Please add it to your .env file as GITHUB_TOKEN.');
-    }
-    return token;
-}
-
-
-export async function deployToGithub(data: { html: string; css: string; js: string, projectName: string, addWatermark: boolean }): Promise<DeployResult> {
+export async function deployToCloudflare(data: { html: string; css: string; js: string, projectName: string, addWatermark: boolean, siteId: string }): Promise<DeployResult> {
   const validation = schema.safeParse(data);
   if (!validation.success) {
     const formattedErrors = validation.error.format();
@@ -38,19 +28,32 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     return { success: false, error: errorMessage };
   }
 
-  const { html, css, js, projectName, addWatermark } = validation.data;
+  const { html, css, js, projectName, addWatermark, siteId } = validation.data;
   
-  let GITHUB_TOKEN = '';
-  try {
-    GITHUB_TOKEN = await getGitHubToken();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Could not retrieve API token.';
-    console.error(message);
-    return { success: false, error: message };
-  }
-
-  const FILE_PATH = `${projectName}/index.html`;
   const deploymentTime = new Date().toISOString();
+  const trackingApiUrl = 'https://runanddeploy.com/api/track';
+
+  const trackingScript = `
+    <script>
+      (function() {
+        const siteId = '${siteId}';
+        if (siteId) {
+          fetch('${trackingApiUrl}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              siteId: siteId,
+              url: window.location.href,
+              referrer: document.referrer,
+              userAgent: navigator.userAgent,
+            }),
+          });
+        }
+      })();
+    </script>
+  `;
 
   const adScriptLoader = `
     <script>
@@ -107,8 +110,8 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
 
   const isFullHtml = html.trim().toLowerCase().startsWith('<!doctype html>') || html.trim().toLowerCase().startsWith('<html>');
   
-  const fileContent = isFullHtml 
-    ? html.replace('</body>', `${watermarkHTML}${adScriptLoader}</body>`)
+  const fullHtmlContent = isFullHtml 
+    ? html.replace('</body>', `${watermarkHTML}${adScriptLoader}${trackingScript}</body>`)
     : `
 <!DOCTYPE html>
 <html lang="en">
@@ -128,58 +131,33 @@ export async function deployToGithub(data: { html: string; css: string; js: stri
     ${js}
   </script>
   ${adScriptLoader}
+  ${trackingScript}
 </body>
 </html>
   `.trim();
 
-  const contentEncoded = Buffer.from(fileContent).toString('base64');
-  const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
-
   try {
-    // 1. Check if file exists to get its SHA
-    const getFileRes = await fetch(apiUrl, {
-      method: 'GET',
+    const response = await fetch(CLOUDFLARE_API_URL, {
+      method: 'POST',
       headers: {
-        'Authorization': `token ${GITHUB_TOKEN}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-      cache: 'no-store',
-    });
-
-    if (getFileRes.ok) {
-        const fileData = await getFileRes.json();
-        return { success: false, error: 'This name is already in use.' };
-    } else if (getFileRes.status !== 404) {
-      const errorData = await getFileRes.json();
-      throw new Error(`Failed to check for existing file: ${errorData.message || getFileRes.statusText}`);
-    }
-    
-    // 2. Create the file
-    const putFileRes = await fetch(apiUrl, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `token ${GITHUB_TOKEN}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: `feat: Deploy site '${projectName}' via RunAndDeploy [${new Date().toISOString()}]`,
-        content: contentEncoded,
-        branch: BRANCH,
+        subdomain: projectName,
+        html: fullHtmlContent,
       }),
     });
 
-    if (!putFileRes.ok) {
-      const errorData = await putFileRes.json();
-      return { success: false, error: `GitHub API error: ${errorData.message || putFileRes.statusText}` };
+    const result = await response.json();
+
+    if (response.ok && result.success) {
+      return { success: true, url: result.url };
+    } else {
+      // Handle cases where the worker returns a non-success but ok response, or a non-ok response
+      return { success: false, error: result.error || `Deployment failed with status: ${response.status}` };
     }
-
-    const deployedUrl = `https://${REPO_OWNER}.github.io/${REPO_NAME}/${projectName}/`;
-
-    return { success: true, url: deployedUrl };
   } catch (error) {
-    console.error('Deployment failed:', error);
+    console.error('Deployment to Cloudflare failed:', error);
     return { success: false, error: error instanceof Error ? error.message : 'An unknown error occurred during deployment.' };
   }
 }
