@@ -10,6 +10,7 @@ import { ExternalLink, Home, Loader2, ServerCrash } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SiteViewCount } from '@/components/ui/SiteViewCount';
 
 // Define the shape of a DeployedSite document
 interface DeployedSite {
@@ -55,7 +56,7 @@ export default function MySitesPage() {
       <div className="flex flex-col items-center justify-center h-screen bg-background text-center p-4">
         <ServerCrash className="h-16 w-16 text-destructive mb-4" />
         <h1 className="text-2xl font-bold">Something went wrong</h1>
-        <p className="text-muted-foreground mb-6 max-w-md">We couldn't load your sites. This can sometimes happen due to a network or permissions issue.</p>
+        <p className="text-muted-foreground mb-6 max-w-md">We couldn\'t load your sites. This can sometimes happen due to a network or permissions issue.</p>
         <p className="text-sm text-muted-foreground/50 break-all max-w-full">{error.message}</p>
         <Button asChild variant="outline" className="mt-4">
           <Link href="/">
@@ -95,7 +96,10 @@ export default function MySitesPage() {
             {sortedSites.map((site) => (
               <Card key={site.id} className="flex flex-col">
                 <CardHeader>
-                  <CardTitle className="truncate">{site.projectName}</CardTitle>
+                    <div className="flex justify-between items-start">
+                        <CardTitle className="truncate pr-4">{site.projectName}</CardTitle>
+                        <SiteViewCount siteId={site.id} />
+                    </div>
                   <CardDescription>
                     {site.deployedAt ? `Deployed ${formatDistanceToNow(site.deployedAt.toDate(), { addSuffix: true })}` : 'Deployment date not available'}
                   </CardDescription>
@@ -144,7 +148,10 @@ const SitesPageSkeleton = () => (
       {[...Array(3)].map((_, i) => (
         <Card key={i}>
           <CardHeader>
-            <Skeleton className="h-6 w-3/4 mb-2" />
+            <div className="flex justify-between items-start">
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-12" />
+            </div>
             <Skeleton className="h-4 w-1/2" />
           </CardHeader>
           <CardContent>
