@@ -1,26 +1,15 @@
-
 import { NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
-
-// Initialize Firebase Admin SDK
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-    });
-  } catch (error) {
-    console.error('Firebase admin initialization error', error);
-  }
-}
-
-const db = admin.firestore();
+import { getAdminApp } from '@/firebase/admin';
 
 export async function POST(request: Request) {
   try {
+    const adminApp = getAdminApp();
+    if (!adminApp) {
+      return new NextResponse('Firebase not configured', { status: 503 });
+    }
+
+    const db = adminApp.firestore();
     const body = await request.json();
     const { siteId, url, referrer, userAgent } = body;
 
