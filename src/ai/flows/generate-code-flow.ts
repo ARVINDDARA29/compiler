@@ -10,7 +10,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { streamFlow } from 'genkit';
 
-export const GenerateCodeInputSchema = z.object({
+const GenerateCodeInputSchema = z.object({
   prompt: z.string().describe('The user prompt describing the code to generate.'),
   language: z.enum(['html', 'css', 'js']).describe('The programming language to generate.'),
 });
