@@ -8,7 +8,6 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { streamFlow } from 'genkit';
 
 const GenerateCodeInputSchema = z.object({
   prompt: z.string().describe('The user prompt describing the code to generate.'),
@@ -18,7 +17,7 @@ const GenerateCodeInputSchema = z.object({
 export type GenerateCodeInput = z.infer<typeof GenerateCodeInputSchema>;
 
 export async function generateCode(input: GenerateCodeInput) {
-  const { stream } = await streamFlow(generateCodeFlow, input);
+  const { stream } = await generateCodeFlow(input);
   return stream;
 }
 
