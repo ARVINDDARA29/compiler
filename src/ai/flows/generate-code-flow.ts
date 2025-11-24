@@ -4,7 +4,7 @@
  * @fileOverview A Genkit flow for generating code based on a user prompt.
  *
  * - generateCode - A function that streams code generation.
- * - GenerateCodeInputSchema - The input type for the generateCode function.
+ * - GenerateCodeInput - The input type for the generateCode function.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -18,7 +18,7 @@ const GenerateCodeInputSchema = z.object({
 export type GenerateCodeInput = z.infer<typeof GenerateCodeInputSchema>;
 
 export async function generateCode(input: GenerateCodeInput) {
-  const { stream } = streamFlow(generateCodeFlow, input);
+  const { stream } = await streamFlow(generateCodeFlow, input);
   return stream;
 }
 
