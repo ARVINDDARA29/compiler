@@ -3,6 +3,9 @@
 import type { FC } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Sparkles } from 'lucide-react';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface CodeEditorProps {
   htmlCode: string;
@@ -11,6 +14,8 @@ interface CodeEditorProps {
   setCssCode: (code: string) => void;
   jsCode: string;
   setJsCode: (code: string) => void;
+  onAiClick: () => void;
+  onTabChange: (tab: 'html' | 'css' | 'js') => void;
 }
 
 const CodeEditor: FC<CodeEditorProps> = ({
@@ -20,15 +25,29 @@ const CodeEditor: FC<CodeEditorProps> = ({
   setCssCode,
   jsCode,
   setJsCode,
+  onAiClick,
+  onTabChange,
 }) => {
   return (
-    <Tabs defaultValue="html" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full">
+    <Tabs defaultValue="html" className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card h-full" onValueChange={(value) => onTabChange(value as 'html' | 'css' | 'js')}>
       <div className="flex items-center justify-between pr-2 bg-muted">
         <TabsList className="grid w-full grid-cols-3 bg-muted">
           <TabsTrigger value="html">HTML</TabsTrigger>
           <TabsTrigger value="css">CSS</TabsTrigger>
           <TabsTrigger value="js">JavaScript</TabsTrigger>
         </TabsList>
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onAiClick}>
+                        <Sparkles className="h-4 w-4 text-primary" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Generate Code with AI</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
       </div>
       <TabsContent value="html" className="flex-1 overflow-y-auto mt-0">
         <Textarea
