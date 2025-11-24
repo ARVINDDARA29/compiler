@@ -8,7 +8,7 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { streamFlow } from 'genkit/stream';
+import { streamFlow } from 'genkit';
 
 export const GenerateCodeInputSchema = z.object({
   prompt: z.string().describe('The user prompt describing the code to generate.'),
@@ -18,7 +18,7 @@ export const GenerateCodeInputSchema = z.object({
 export type GenerateCodeInput = z.infer<typeof GenerateCodeInputSchema>;
 
 export async function generateCode(input: GenerateCodeInput) {
-  const { stream } = await streamFlow(generateCodeFlow, input);
+  const { stream } = streamFlow(generateCodeFlow, input);
   return stream;
 }
 
@@ -27,6 +27,7 @@ const generateCodeFlow = ai.defineFlow(
     name: 'generateCodeFlow',
     inputSchema: GenerateCodeInputSchema,
     outputSchema: z.string(),
+    stream: true,
   },
   async (input) => {
     const llmResponse = await ai.generate({
@@ -39,12 +40,6 @@ const generateCodeFlow = ai.defineFlow(
       stream: true,
     });
 
-    let code = '';
-    for await (const chunk of llmResponse.stream()) {
-      if (chunk.text) {
-        code += chunk.text;
-      }
-    }
-    return code;
+    return llmResponse.stream();
   }
 );

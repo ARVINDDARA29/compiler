@@ -292,7 +292,7 @@ export default function Home() {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale-1.0">
   <title>Exported Project</title>
   <style>
     ${cssCode}
@@ -345,10 +345,22 @@ export default function Home() {
       // Clear the current editor
       setter('');
 
-      for await (const chunk of codeStream) {
+      const reader = codeStream.getReader();
+      const decoder = new TextDecoder();
+
+      const read = async () => {
+        const { done, value } = await reader.read();
+        if (done) {
+          return;
+        }
+        const chunk = decoder.decode(value, { stream: true });
         currentCode += chunk;
         setter(currentCode);
-      }
+        read();
+      };
+      
+      read();
+
     } catch (error) {
       console.error('AI code generation failed:', error);
       toast({
