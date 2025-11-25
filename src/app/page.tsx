@@ -160,10 +160,9 @@ export default function Home() {
   };
   
   const handleConfirmDeploy = async (projectName: string, addWatermark: boolean) => {
-    setIsDeployDialogOpen(false);
     setIsDeploying(true);
-    setShowDeployingOverlay(true);
-
+    setIsDeployDialogOpen(false);
+  
     if (!user || !firestore) {
       toast({
         variant: 'destructive',
@@ -171,23 +170,21 @@ export default function Home() {
         description: 'Please log in to deploy.',
       });
       setIsDeploying(false);
-      setShowDeployingOverlay(false);
       return;
     }
-
+  
     try {
       const enableUserSpecificUrl = JSON.parse(localStorage.getItem('enableUserSpecificUrl') ?? 'true');
       let finalProjectName = projectName;
-
+  
       if (enableUserSpecificUrl && user.displayName) {
         const sanitizedUserName = user.displayName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
         finalProjectName = `${sanitizedUserName}-${projectName}`;
       }
       
-      const siteId = finalProjectName; // The unique ID is now the final project name
+      const siteId = finalProjectName;
       const siteRef = doc(firestore, 'sites', siteId);
-
-      // Check if a site with this name already exists
+  
       const docSnap = await getDoc(siteRef);
       if (docSnap.exists()) {
         toast({
@@ -196,64 +193,83 @@ export default function Home() {
           description: `The project name "${finalProjectName}" is already taken. Please choose a different name.`,
         });
         setIsDeploying(false);
-        setShowDeployingOverlay(false);
         return;
       }
-
-      // If name is available, proceed with deployment
-      const result = await deployToCloudflare({
-        html: htmlCode,
-        css: cssCode,
-        js: jsCode,
-        projectName: finalProjectName,
-        addWatermark,
-        siteId,
+  
+      // Optimistic UI: Show success toast immediately
+      const optimisticUrl = `https://arvindbishnoi.runanddeploy.workers.dev/site/${finalProjectName}`;
+      toast({
+        title: 'Deployment Successful!',
+        description: (
+          <span>
+            Your site is live at: {' '}
+            <a href={optimisticUrl} target="_blank" rel="noopener noreferrer" className="underline">
+              {optimisticUrl}
+            </a>
+          </span>
+        ),
+        duration: 10000,
       });
-
-      if (result.success && result.url) {
-        const siteData = {
-          userId: user.uid,
-          projectName: finalProjectName,
-          url: result.url,
-          deployedAt: serverTimestamp(),
-        };
-        
-        await setDoc(siteRef, siteData).catch(err => {
-             const path = siteRef.path;
-             const operation = 'create';
-             const requestResourceData = siteData;
-             const permissionError = new FirestorePermissionError({path, operation, requestResourceData});
-             errorEmitter.emit('permission-error', permissionError);
-        });
-
-        toast({
-          title: 'Deployment Successful!',
-          description: (
-            <span>
-              Your site is live at: {' '}
-              <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline">
-                {result.url}
-              </a>
-            </span>
-          ),
-          duration: 10000,
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Deployment Failed',
-          description: result.error || 'An unknown error occurred.',
-        });
-      }
+  
+      // Perform actual deployment and database operations in the background
+      (async () => {
+        try {
+          const result = await deployToCloudflare({
+            html: htmlCode,
+            css: cssCode,
+            js: jsCode,
+            projectName: finalProjectName,
+            addWatermark,
+            siteId,
+          });
+  
+          if (result.success && result.url) {
+            const siteData = {
+              userId: user.uid,
+              projectName: finalProjectName,
+              url: result.url,
+              deployedAt: serverTimestamp(),
+            };
+            
+            await setDoc(siteRef, siteData).catch(err => {
+                 const path = siteRef.path;
+                 const operation = 'create';
+                 const requestResourceData = siteData;
+                 const permissionError = new FirestorePermissionError({path, operation, requestResourceData});
+                 errorEmitter.emit('permission-error', permissionError);
+                 throw permissionError; // throw to be caught by the outer catch block
+            });
+            // No need for a toast here, it's already shown
+          } else {
+            // Rollback toast: show an error if background deployment failed
+            toast({
+              variant: 'destructive',
+              title: 'Deployment Failed',
+              description: result.error || 'An unknown error occurred in the background.',
+            });
+          }
+        } catch (error) {
+          // Rollback toast for any other errors
+          toast({
+            variant: 'destructive',
+            title: 'Deployment Failed',
+            description: error instanceof Error ? error.message : 'An unknown background error occurred.',
+          });
+        } finally {
+          // This runs in the background, so we update the state silently
+          // without triggering another UI change for the user.
+          setIsDeploying(false); 
+        }
+      })();
+  
     } catch (error) {
+      // This catches errors from the initial checks (e.g., getDoc)
       toast({
         variant: 'destructive',
         title: 'Deployment Failed',
         description: error instanceof Error ? error.message : 'An unknown error occurred.',
       });
-    } finally {
       setIsDeploying(false);
-      setShowDeployingOverlay(false);
     }
   };
 
