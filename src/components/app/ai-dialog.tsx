@@ -52,22 +52,26 @@ export function AiDialog({ open, onOpenChange }: AiDialogProps) {
                 initial={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5 }}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-b-lg"
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-b-lg p-4"
               >
-                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-                <h3 className="text-lg font-semibold">AI is loading...</h3>
-                <p className="text-sm text-muted-foreground mt-2 max-w-sm text-center">
-                  To use it, ask it to 'write code in HTML/CSS/JS'. Then, copy the code, paste it into the editor, and deploy.
-                </p>
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-6" />
+                <h3 className="text-xl font-bold mb-4">AI Assistant is Loading...</h3>
+                <div className="bg-muted/50 border border-border rounded-lg p-4 max-w-lg text-center">
+                    <p className="text-base font-semibold text-foreground">
+                        How to use the AI:
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                        Ask the AI to "write code in HTML, CSS, and JavaScript". Then, copy the generated code, paste it into the respective editor tabs, and click deploy!
+                    </p>
+                </div>
               </motion.div>
             )}
            </AnimatePresence>
-           <iframe
+           <gradio-app
                 src="https://qwen-qwen3-coder-webdev.hf.space"
-                frameBorder="0"
                 className={cn('w-full h-full transition-opacity duration-500', isLoading ? 'opacity-0' : 'opacity-100')}
                 onLoad={() => setIsLoading(false)}
-            ></iframe>
+            ></gradio-app>
         </div>
       </DialogContent>
     </Dialog>
