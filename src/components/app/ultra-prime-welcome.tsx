@@ -36,7 +36,7 @@ export function UltraPrimeWelcome({ onConfirm }: UltraPrimeWelcomeProps) {
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Congratulations!
           </h1>
-          <p className="mt-2 bg-gradient-to-r from-primary via-yellow-400 to-primary bg-clip-text text-lg font-semibold text-transparent">
+          <p className="mt-2 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-lg font-semibold text-transparent">
             You've Won an Ultra Prime Subscription!
           </p>
         </motion.div>

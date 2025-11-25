@@ -1,18 +1,4 @@
 
-/**
- * @fileoverview Firestore Security Rules for RunAndDeploy application.
- *
- * Core Philosophy:
- * This ruleset enforces a user-ownership model. Users can only read and write their own data.
- * Public data is generally read-only.
- *
- * Data Structure:
- * - /users/{userId}: Stores public user profile information.
- * - /sites/{siteId}: Stores all deployed sites. Access is scoped by userId.
- * - /feedbacks/{feedbackId}: Stores user feedback. Users can only write their own feedback.
- * - /gitapi/{apiId}: Stores the GitHub API token. Should only be readable by server functions.
- * - /app_state/deployment_counter: Stores global app state like the deployment counter.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -24,11 +10,25 @@ service cloud.firestore {
       allow write: if false; // Disallow client-side writes
     }
     
-    // WARNING: INSECURE RULE
-    // This allows any authenticated user to read and write any data.
-    // This is for debugging purposes only.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    match /users/{userId} {
+      // Anyone can read a user's public profile
+      allow get: if true;
+      // A user can create and update their own profile
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /sites/{siteId} {
+      // Users can only read and write their own sites
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Users can only create sites for themselves
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /feedbacks/{feedbackId} {
+        // feedbacks can be read by anyone
+        allow get: if true;
+        // Users can only write their own feedback
+        allow create: if request.auth != null;
     }
   }
 }

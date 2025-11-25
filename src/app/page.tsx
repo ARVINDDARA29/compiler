@@ -11,8 +11,6 @@ import { DeployDialog } from '@/components/app/deploy-dialog';
 import DeployingOverlay from '@/components/app/deploying-overlay';
 import { FeedbackDialog } from '@/components/app/feedback-dialog';
 import { V2AnnouncementDialog } from '@/components/app/v2-announcement-dialog';
-import { AiCodeDialog } from '@/components/app/ai-code-dialog';
-import { generateCode } from '@/ai/flows/generate-code-flow';
 import { useUser, useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -107,7 +105,6 @@ export default function Home() {
   const [showDeployingOverlay, setShowDeployingOverlay] = useState(false);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
   const [isV2AnnouncementOpen, setIsV2AnnouncementOpen] = useState(false);
-  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'html' | 'css' | 'js'>('html');
 
 
@@ -292,7 +289,7 @@ export default function Home() {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale-1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Exported Project</title>
   <style>
     ${cssCode}
@@ -327,52 +324,6 @@ export default function Home() {
     }
   }
 
-  const handleAiGenerate = async (prompt: string) => {
-    setIsAiDialogOpen(false);
-    try {
-      const codeStream = await generateCode({
-        prompt,
-        language: activeTab,
-      });
-
-      let currentCode = '';
-      const setter = {
-        html: setHtmlCode,
-        css: setCssCode,
-        js: setJsCode,
-      }[activeTab];
-
-      // Clear the current editor
-      setter('');
-
-      const reader = codeStream.getReader();
-      const decoder = new TextDecoder();
-
-      const read = async () => {
-        const { done, value } = await reader.read();
-        if (done) {
-          return;
-        }
-        const chunk = decoder.decode(value, { stream: true });
-        currentCode += chunk;
-        setter(currentCode);
-        read();
-      };
-      
-      read();
-
-    } catch (error) {
-      console.error('AI code generation failed:', error);
-      toast({
-        variant: 'destructive',
-        title: 'AI Generation Failed',
-        description:
-          error instanceof Error ? error.message : 'An unknown error occurred.',
-      });
-    }
-  };
-
-
   return (
     <div className="flex h-screen w-full flex-col bg-background text-foreground">
       <AnimatePresence>
@@ -403,7 +354,6 @@ export default function Home() {
                         setCssCode={setCssCode}
                         jsCode={jsCode}
                         setJsCode={setJsCode}
-                        onAiClick={() => setIsAiDialogOpen(true)}
                         onTabChange={(tab) => setActiveTab(tab)}
                     />
                 ) : (
@@ -420,7 +370,6 @@ export default function Home() {
                         setCssCode={setCssCode}
                         jsCode={jsCode}
                         setJsCode={setJsCode}
-                        onAiClick={() => setIsAiDialogOpen(true)}
                         onTabChange={(tab) => setActiveTab(tab)}
                     />
                 </ResizablePanel>
@@ -449,11 +398,6 @@ export default function Home() {
       <V2AnnouncementDialog
         open={isV2AnnouncementOpen}
         onOpenChange={setIsV2AnnouncementOpen}
-      />
-      <AiCodeDialog
-        open={isAiDialogOpen}
-        onOpenChange={setIsAiDialogOpen}
-        onConfirm={handleAiGenerate}
       />
     </div>
   );
