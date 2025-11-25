@@ -11,6 +11,7 @@ import { DeployDialog } from '@/components/app/deploy-dialog';
 import DeployingOverlay from '@/components/app/deploying-overlay';
 import { FeedbackDialog } from '@/components/app/feedback-dialog';
 import { V2AnnouncementDialog } from '@/components/app/v2-announcement-dialog';
+import { AiDialog } from '@/components/app/ai-dialog';
 import { useUser, useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -105,6 +106,7 @@ export default function Home() {
   const [showDeployingOverlay, setShowDeployingOverlay] = useState(false);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
   const [isV2AnnouncementOpen, setIsV2AnnouncementOpen] = useState(false);
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'html' | 'css' | 'js'>('html');
 
 
@@ -208,6 +210,9 @@ export default function Home() {
         siteId,
       });
 
+      setShowDeployingOverlay(false);
+      setIsDeploying(false);
+
       if (result.success && result.url) {
         const siteData = {
           userId: user.uid,
@@ -216,13 +221,13 @@ export default function Home() {
           deployedAt: serverTimestamp(),
         };
         
-        await setDoc(siteRef, siteData).catch(err => {
+        setDoc(siteRef, siteData).catch(err => {
              const path = siteRef.path;
              const operation = 'create';
              const requestResourceData = siteData;
              const permissionError = new FirestorePermissionError({path, operation, requestResourceData});
              errorEmitter.emit('permission-error', permissionError);
-             throw permissionError; // throw to be caught by the outer catch block
+             // No need to throw here, the error is handled globally
         });
 
         toast({
@@ -252,9 +257,8 @@ export default function Home() {
         title: 'Deployment Failed',
         description: error instanceof Error ? error.message : 'An unknown error occurred.',
       });
-    } finally {
-        setIsDeploying(false);
-        setShowDeployingOverlay(false);
+      setIsDeploying(false);
+      setShowDeployingOverlay(false);
     }
   };
 
@@ -338,6 +342,7 @@ export default function Home() {
         onRun={runCode}
         onImport={handleImport}
         onExport={handleExport}
+        onAiClick={() => setIsAiDialogOpen(true)}
         mobileView={mobileView}
         onSwitchToCode={() => setMobileView('editor')}
         onFeedbackClick={handleFeedbackClick}
@@ -399,6 +404,10 @@ export default function Home() {
       <V2AnnouncementDialog
         open={isV2AnnouncementOpen}
         onOpenChange={setIsV2AnnouncementOpen}
+      />
+      <AiDialog
+        open={isAiDialogOpen}
+        onOpenChange={setIsAiDialogOpen}
       />
     </div>
   );

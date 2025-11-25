@@ -2,7 +2,7 @@
 'use client';
 
 import { FC, useState } from 'react';
-import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, Download, MoreVertical, Settings } from 'lucide-react';
+import { Loader2, Rocket, Play, Code, User as UserIcon, LogOut, MessageSquarePlus, LayoutGrid, Upload, Download, MoreVertical, Settings, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser, useAuth } from '@/firebase';
@@ -20,12 +20,13 @@ interface AppHeaderProps {
   onRun: () => void;
   onImport: () => void;
   onExport: () => void;
+  onAiClick: () => void;
   mobileView: 'editor' | 'preview';
   onSwitchToCode: () => void;
   onFeedbackClick: () => void;
 }
 
-const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, onExport, mobileView, onSwitchToCode, onFeedbackClick }) => {
+const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun, onImport, onExport, onAiClick, mobileView, onSwitchToCode, onFeedbackClick }) => {
   const isMobile = useIsMobile();
   const { user } = useUser();
   const auth = useAuth();
@@ -99,6 +100,14 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                                     <TooltipContent><p>Back to Code</p></TooltipContent>
                                 </Tooltip>
                             )}
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button onClick={onAiClick} variant="outline" size="sm" className="flex-shrink-0">
+                                        <Sparkles className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>AI Assistant</p></TooltipContent>
+                            </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button onClick={onRun} variant="outline" size="sm" className="flex-shrink-0" disabled={isRunning}>
@@ -148,6 +157,17 @@ const AppHeader: FC<AppHeaderProps> = ({ isDeploying, isRunning, onDeploy, onRun
                         </>
                     ) : (
                         <>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button onClick={onAiClick} variant="outline" size="sm" className="flex-shrink-0">
+                                        <Sparkles className="h-4 w-4 md:mr-2" />
+                                        <span className="hidden md:inline">AI Assistant</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>AI Assistant</p>
+                                </TooltipContent>
+                            </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button onClick={onImport} variant="outline" size="sm" className="flex-shrink-0">
