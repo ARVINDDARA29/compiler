@@ -199,82 +199,62 @@ export default function Home() {
         return;
       }
   
-      // Optimistic UI: Show success toast immediately
-      const optimisticUrl = `https://arvindbishnoi.runanddeploy.workers.dev/site/${finalProjectName}`;
-      toast({
-        title: 'Deployment Successful!',
-        description: (
-          <span>
-            Your site is live at: {' '}
-            <a href={optimisticUrl} target="_blank" rel="noopener noreferrer" className="underline">
-              {optimisticUrl}
-            </a>
-          </span>
-        ),
-        duration: 10000,
+      const result = await deployToCloudflare({
+        html: htmlCode,
+        css: cssCode,
+        js: jsCode,
+        projectName: finalProjectName,
+        addWatermark,
+        siteId,
       });
-  
-      // Perform actual deployment and database operations in the background
-      (async () => {
-        try {
-          const result = await deployToCloudflare({
-            html: htmlCode,
-            css: cssCode,
-            js: jsCode,
-            projectName: finalProjectName,
-            addWatermark,
-            siteId,
-          });
-  
-          if (result.success && result.url) {
-            const siteData = {
-              userId: user.uid,
-              projectName: finalProjectName,
-              url: result.url,
-              deployedAt: serverTimestamp(),
-            };
-            
-            await setDoc(siteRef, siteData).catch(err => {
-                 const path = siteRef.path;
-                 const operation = 'create';
-                 const requestResourceData = siteData;
-                 const permissionError = new FirestorePermissionError({path, operation, requestResourceData});
-                 errorEmitter.emit('permission-error', permissionError);
-                 throw permissionError; // throw to be caught by the outer catch block
-            });
-            // No need for a toast here, it's already shown
-          } else {
-            // Rollback toast: show an error if background deployment failed
-            toast({
-              variant: 'destructive',
-              title: 'Deployment Failed',
-              description: result.error || 'An unknown error occurred in the background.',
-            });
-          }
-        } catch (error) {
-          // Rollback toast for any other errors
-          toast({
-            variant: 'destructive',
-            title: 'Deployment Failed',
-            description: error instanceof Error ? error.message : 'An unknown background error occurred.',
-          });
-        } finally {
-          // This runs in the background, so we update the state silently
-          // without triggering another UI change for the user.
-          setIsDeploying(false);
-          setShowDeployingOverlay(false);
-        }
-      })();
+
+      if (result.success && result.url) {
+        const siteData = {
+          userId: user.uid,
+          projectName: finalProjectName,
+          url: result.url,
+          deployedAt: serverTimestamp(),
+        };
+        
+        await setDoc(siteRef, siteData).catch(err => {
+             const path = siteRef.path;
+             const operation = 'create';
+             const requestResourceData = siteData;
+             const permissionError = new FirestorePermissionError({path, operation, requestResourceData});
+             errorEmitter.emit('permission-error', permissionError);
+             throw permissionError; // throw to be caught by the outer catch block
+        });
+
+        toast({
+            title: 'Deployment Successful!',
+            description: (
+              <span>
+                Your site is live at: {' '}
+                <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline">
+                  {result.url}
+                </a>
+              </span>
+            ),
+            duration: 10000,
+        });
+
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Deployment Failed',
+          description: result.error || 'An unknown error occurred during deployment.',
+        });
+      }
   
     } catch (error) {
-      // This catches errors from the initial checks (e.g., getDoc)
       toast({
         variant: 'destructive',
         title: 'Deployment Failed',
         description: error instanceof Error ? error.message : 'An unknown error occurred.',
       });
-      setIsDeploying(false);
-      setShowDeployingOverlay(false);
+    } finally {
+        setIsDeploying(false);
+        setShowDeployingOverlay(false);
     }
   };
 
