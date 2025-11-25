@@ -1,7 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  output: "standalone",   // ❗ Cloudflare Workers REQUIRED
+  // ✅ CHANGE 1: 'standalone' ki jagah 'export' karein taaki 'out' folder bane
+  output: "export",
 
   typescript: {
     ignoreBuildErrors: true,
@@ -11,6 +12,8 @@ const nextConfig: NextConfig = {
   },
 
   images: {
+    // ✅ CHANGE 2: Static export ke liye ye zaroori hai
+    unoptimized: true, 
     remotePatterns: [
       {
         protocol: 'https',
@@ -33,7 +36,11 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  async headers() {
+  // ❌ CHANGE 3: Headers section ko comment karna padega
+  // Static export (output: 'export') ke saath headers() support nahi karta.
+  // Agar aapko headers chahiye to Cloudflare ke liye 'public/_headers' file banani padegi.
+  
+  /* async headers() {
     return [
       {
         source: "/api/:path*",
@@ -46,6 +53,7 @@ const nextConfig: NextConfig = {
       }
     ];
   },
+  */
 };
 
 export default nextConfig;
