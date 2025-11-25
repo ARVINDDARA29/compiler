@@ -161,6 +161,7 @@ export default function Home() {
   
   const handleConfirmDeploy = async (projectName: string, addWatermark: boolean) => {
     setIsDeploying(true);
+    setShowDeployingOverlay(true);
     setIsDeployDialogOpen(false);
   
     if (!user || !firestore) {
@@ -170,6 +171,7 @@ export default function Home() {
         description: 'Please log in to deploy.',
       });
       setIsDeploying(false);
+      setShowDeployingOverlay(false);
       return;
     }
   
@@ -193,6 +195,7 @@ export default function Home() {
           description: `The project name "${finalProjectName}" is already taken. Please choose a different name.`,
         });
         setIsDeploying(false);
+        setShowDeployingOverlay(false);
         return;
       }
   
@@ -258,7 +261,8 @@ export default function Home() {
         } finally {
           // This runs in the background, so we update the state silently
           // without triggering another UI change for the user.
-          setIsDeploying(false); 
+          setIsDeploying(false);
+          setShowDeployingOverlay(false);
         }
       })();
   
@@ -270,6 +274,7 @@ export default function Home() {
         description: error instanceof Error ? error.message : 'An unknown error occurred.',
       });
       setIsDeploying(false);
+      setShowDeployingOverlay(false);
     }
   };
 
