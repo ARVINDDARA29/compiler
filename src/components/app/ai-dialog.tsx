@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Sparkles, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -19,22 +19,6 @@ interface AiDialogProps {
 
 export function AiDialog({ open, onOpenChange }: AiDialogProps) {
     const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        if (open) {
-          // Reset loading state every time the dialog opens
-          setIsLoading(true);
-          const scriptId = 'gradio-script';
-          if (!document.getElementById(scriptId)) {
-            const script = document.createElement('script');
-            script.id = scriptId;
-            script.type = 'module';
-            script.src = 'https://gradio.s3-us-west-2.amazonaws.com/5.38.0/gradio.js';
-            document.head.appendChild(script);
-          }
-        }
-    }, [open]);
-
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -55,7 +39,7 @@ export function AiDialog({ open, onOpenChange }: AiDialogProps) {
                 className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-b-lg p-4"
               >
                 <Loader2 className="h-12 w-12 animate-spin text-primary mb-6" />
-                <h3 className="text-xl font-bold mb-4">AI Assistant is Loading...</h3>
+                <h3 className="text-xl font-bold mb-4 text-center">AI Assistant is Loading...</h3>
                 <div className="bg-muted/50 border border-border rounded-lg p-4 max-w-lg text-center">
                     <p className="text-base font-semibold text-foreground">
                         How to use the AI:
@@ -67,11 +51,12 @@ export function AiDialog({ open, onOpenChange }: AiDialogProps) {
               </motion.div>
             )}
            </AnimatePresence>
-           <gradio-app
-                src="https://qwen-qwen3-coder-webdev.hf.space"
-                className={cn('w-full h-full transition-opacity duration-500', isLoading ? 'opacity-0' : 'opacity-100')}
-                onLoad={() => setIsLoading(false)}
-            ></gradio-app>
+           <iframe
+              src="https://qwen-qwen3-coder-webdev.hf.space"
+              frameBorder="0"
+              className={cn('w-full h-full rounded-md transition-opacity duration-500', isLoading ? 'opacity-0' : 'opacity-100')}
+              onLoad={() => setIsLoading(false)}
+            ></iframe>
         </div>
       </DialogContent>
     </Dialog>
